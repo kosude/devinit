@@ -12,12 +12,16 @@ use cli::{Cli, CommandVariant};
 use error::ExecResult;
 
 mod cli;
+mod config;
 mod error;
 mod log;
 
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
         let cli = Cli::parse();
+
+        println!("{:?}", &config::CONFIG.file_templates);
+        println!("{:?}", &config::CONFIG.project_templates);
 
         match cli.subcommand {
             CommandVariant::File(args) => Ok(()),
