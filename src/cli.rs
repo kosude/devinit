@@ -44,6 +44,10 @@ pub struct ProjectArgs {
 
 #[derive(Args, Debug)]
 pub struct CommonArgGroup {
+    /// Specify path to the devinit configuration file
+    #[arg(long, action)]
+    pub config: Option<String>,
+
     /// Print verbose output
     #[arg(short, long, action)]
     pub verbose: bool,

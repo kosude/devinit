@@ -11,16 +11,19 @@ use crate::log;
 
 pub type ExecResult<T> = Result<T, ExecError>;
 
+#[derive(Debug)]
 pub enum ExecError {
-    FilesystemError(String),
-    FileNotFoundError(String),
+    FileReadWriteError(String),
+    NoConfigError(),
 }
 
 impl ExecError {
     fn base_handle_fn(&self, c: &i32) {
         match &self {
-            Self::FilesystemError(s) => log::error(format!("Filesystem error (error {c}): {s}")),
-            Self::FileNotFoundError(s) => log::error(format!("File not found (error {c}): {s}")),
+            Self::FileReadWriteError(s) => {
+                log::error(format!("File read/write error (error {c}): {s}"))
+            }
+            Self::NoConfigError() => log::error(format!("No global configuration file found")),
         };
     }
 
@@ -40,8 +43,8 @@ impl ExecError {
 impl From<&ExecError> for i32 {
     fn from(value: &ExecError) -> Self {
         match value {
-            ExecError::FilesystemError(_) => 1,
-            ExecError::FileNotFoundError(_) => 2,
+            ExecError::FileReadWriteError(_) => 1,
+            ExecError::NoConfigError() => 2,
         }
     }
 }

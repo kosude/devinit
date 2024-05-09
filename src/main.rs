@@ -11,17 +11,19 @@ use clap::Parser;
 use cli::{Cli, CommandVariant};
 use error::ExecResult;
 
+mod cfg;
 mod cli;
-mod config;
 mod error;
 mod log;
 
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
+        cfg::init_global()?;
+
         let cli = Cli::parse();
 
-        println!("{:?}", &config::CONFIG.file_templates);
-        println!("{:?}", &config::CONFIG.project_templates);
+        println!("{:?}", &cfg::get_global().file_templates);
+        println!("{:?}", &cfg::get_global().project_templates);
 
         match cli.subcommand {
             CommandVariant::File(args) => Ok(()),
