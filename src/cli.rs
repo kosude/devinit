@@ -22,6 +22,15 @@ pub enum CommandVariant {
     Project(ProjectArgs),
 }
 
+impl CommandVariant {
+    pub fn get_common_args(&self) -> &CommonArgGroup {
+        match &self {
+            CommandVariant::File(f) => &f.com,
+            CommandVariant::Project(p) => &p.com,
+        }
+    }
+}
+
 /// Initialise a file with a specified template profile
 #[derive(Args, Debug)]
 pub struct FileArgs {

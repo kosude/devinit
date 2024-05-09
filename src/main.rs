@@ -18,9 +18,9 @@ mod log;
 
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
-        cfg::init_global()?;
-
         let cli = Cli::parse();
+
+        cfg::init_global(cli.subcommand.get_common_args().config.as_deref())?;
 
         println!("{:?}", &cfg::get_global().file_templates);
         println!("{:?}", &cfg::get_global().project_templates);

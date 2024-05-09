@@ -23,7 +23,7 @@ impl ExecError {
             Self::FileReadWriteError(s) => {
                 log::error(format!("File read/write error (error {c}): {s}"))
             }
-            Self::NoConfigError() => log::error(format!("No global configuration file found")),
+            Self::NoConfigError() => log::error(format!("No configuration file found")),
         };
     }
 
