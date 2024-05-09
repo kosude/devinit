@@ -5,6 +5,10 @@
  *   See the LICENCE file for more information.
  */
 
+mod error;
+mod log;
+
 fn main() {
-    println!("Hello");
+    log::error("An error message");
+    log::info("An information message");
 }
