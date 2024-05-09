@@ -8,7 +8,7 @@
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
-#[command(about, long_about = None)]
+#[command(version = env!("DEVINITVERS"), about, long_about = None)]
 pub struct Cli {
     #[command(subcommand)]
     pub subcommand: CommandVariant,
@@ -22,25 +22,28 @@ pub enum CommandVariant {
     Project(ProjectArgs),
 }
 
-/// Compile TeX input into PDF output
+/// Initialise a file with a specified template profile
 #[derive(Args, Debug)]
 pub struct FileArgs {
+    /// Path to output file (will be created if necessary)
+    pub file: String,
+
     #[command(flatten)]
     pub com: CommonArgGroup,
 }
 
-/// Persistently watch folder or file for changes and recompile
+/// Initialise a new folder with a specified project template profile
 #[derive(Args, Debug)]
 pub struct ProjectArgs {
+    /// Path to output directory (will be created if necessary)
+    pub folder: String,
+
     #[command(flatten)]
     pub com: CommonArgGroup,
 }
 
 #[derive(Args, Debug)]
 pub struct CommonArgGroup {
-    /// Path to output location
-    pub output: String,
-
     /// Print verbose output
     #[arg(short, long, action)]
     pub verbose: bool,

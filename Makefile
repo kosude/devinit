@@ -1,8 +1,7 @@
 BUILD_DIR := build
 SRC_DIR := .
 
-# PROJECT_VERS := $(shell "$(SRC_DIR)/util/version.sh" --short)
-# PROJECT_VERS_LONG := $(shell "$(SRC_DIR)/util/version.sh" --long)
+PROJECT_VERS := $(shell "$(SRC_DIR)/util/version.sh" --short)
 
 CARGO := cargo
 CARGOCHAN := +nightly
@@ -41,12 +40,12 @@ all: devinit
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-
 #
 # Compile the devinit executable
 #
 
 devinit: $(CARGO_TOML) | validate_cargo
+	DEVINITVERS=$(PROJECT_VERS) \
 	$(CARGO) $(CARGOCHAN) build $(CARGOFLAGS) --manifest-path=$(CARGO_TOML) --target-dir=$(BUILD_DIR)/_$@ --out-dir=$(BUILD_DIR)
 
 

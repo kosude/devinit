@@ -1,0 +1,5 @@
+# putting default env var value here so that `cargo check` doesn't underline calls to `std::env!` as errors:
+# https://github.com/rust-lang/rust-analyzer/issues/13751
+
+[env]
+DEVINITVERS = "latest"

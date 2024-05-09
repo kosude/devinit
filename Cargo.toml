@@ -1,5 +1,6 @@
 [package]
 name = "devinit"
+description = "Quickly initialise files and folders with preconfigured boilerplate templates"
 
 edition = "2018"
 
