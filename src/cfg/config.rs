@@ -7,7 +7,7 @@
 
 use serde::Deserialize;
 
-use super::TemplateMap;
+use super::{Template, TemplateMap};
 use crate::error::{ExecError, ExecResult};
 use std::{
     fs,
@@ -29,9 +29,29 @@ pub fn get_global() -> &'static Config {
 
 // This is the structure expected in the config yaml
 #[derive(Deserialize, Debug, Default, Clone)]
-struct IntermediateParsedConfig {
-    // TODO: TEMP
-    x1: i32,
+struct IntermediateParsedConfig<'a> {
+    file_templates_loc: &'a str,
+    project_templates_loc: &'a str,
+}
+
+impl<'a> IntermediateParsedConfig<'_> {
+    pub fn evaluate_config(&self, config_path: PathBuf) -> ExecResult<Config> {
+        let file_templates_dir = config_path.join(self.file_templates_loc);
+        let project_templates_dir = config_path.join(self.project_templates_loc);
+
+        return Ok(Config {
+            file_templates: fs::read_dir(file_templates_dir)
+                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?
+                .map(|t| Template::load(t.unwrap().path()))
+                .into_iter()
+                .collect(),
+            project_templates: fs::read_dir(project_templates_dir)
+                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?
+                .map(|t| Template::load(t.unwrap().path()))
+                .into_iter()
+                .collect(),
+        });
+    }
 }
 
 // This is not the structure expected in the config yaml, but is produced from that.
@@ -44,24 +64,17 @@ pub struct Config {
 impl Config {
     pub fn load(conf_path: Option<&str>) -> ExecResult<Self> {
         // load configuration from global config or conf_path if not None
-        let conf_str = Self::read_conf_str(conf_path)?;
+        // conf_final_path is the actual folder that we found the actual configuration in and which is to be read from
+        let (conf_str, conf_final_path) = Self::read_conf_str(conf_path)?;
 
         // parse configuration into intermediate struct
         let conf_obj = serde_yaml::from_str::<IntermediateParsedConfig>(&conf_str)
             .map_err(|e| ExecError::InvalidConfigError(e.to_string()))?;
 
-        println!("{:?}", conf_obj);
-
-        // TODO load templates
-        let templates = TemplateMap::new();
-
-        Ok(Config {
-            file_templates: templates.clone(),
-            project_templates: templates.clone(),
-        })
+        return Ok(conf_obj.evaluate_config(conf_final_path)?);
     }
 
-    fn read_conf_str(conf_path: Option<&str>) -> ExecResult<String> {
+    fn read_conf_str(conf_path: Option<&str>) -> ExecResult<(String, PathBuf)> {
         // potential config locations -- we add the explicit path to the end if one is specified.
         let mut candidates = Self::get_global_paths();
         if let Some(p) = conf_path {
@@ -73,8 +86,11 @@ impl Config {
             let path = Path::new(c);
 
             if path.exists() {
-                return Ok(fs::read_to_string(path)
-                    .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?);
+                return Ok((
+                    fs::read_to_string(path)
+                        .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?,
+                    path.parent().unwrap().to_path_buf(),
+                ));
             }
         }
 
