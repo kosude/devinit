@@ -9,14 +9,14 @@ use std::process::exit;
 
 use crate::log;
 
-pub type CompResult<T> = Result<T, CompError>;
+pub type ExecResult<T> = Result<T, ExecError>;
 
-pub enum CompError {
+pub enum ExecError {
     FilesystemError(String),
     FileNotFoundError(String),
 }
 
-impl CompError {
+impl ExecError {
     fn base_handle_fn(&self, c: &i32) {
         match &self {
             Self::FilesystemError(s) => log::error(format!("Filesystem error (error {c}): {s}")),
@@ -37,11 +37,11 @@ impl CompError {
     }
 }
 
-impl From<&CompError> for i32 {
-    fn from(value: &CompError) -> Self {
+impl From<&ExecError> for i32 {
+    fn from(value: &ExecError) -> Self {
         match value {
-            CompError::FilesystemError(_) => 1,
-            CompError::FileNotFoundError(_) => 2,
+            ExecError::FilesystemError(_) => 1,
+            ExecError::FileNotFoundError(_) => 2,
         }
     }
 }
