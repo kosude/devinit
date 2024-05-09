@@ -15,6 +15,7 @@ pub type ExecResult<T> = Result<T, ExecError>;
 pub enum ExecError {
     FileReadWriteError(String),
     NoConfigError(),
+    InvalidConfigError(String),
 }
 
 impl ExecError {
@@ -23,7 +24,10 @@ impl ExecError {
             Self::FileReadWriteError(s) => {
                 log::error(format!("File read/write error (error {c}): {s}"))
             }
-            Self::NoConfigError() => log::error(format!("No configuration file found")),
+            Self::NoConfigError() => log::error(format!("No configuration file found (error {c})")),
+            Self::InvalidConfigError(s) => log::error(format!(
+                "Invalid or malformed config syntax (error {c}): {s}"
+            )),
         };
     }
 
@@ -45,6 +49,7 @@ impl From<&ExecError> for i32 {
         match value {
             ExecError::FileReadWriteError(_) => 1,
             ExecError::NoConfigError() => 2,
+            ExecError::InvalidConfigError(_) => 3,
         }
     }
 }

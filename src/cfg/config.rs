@@ -5,6 +5,8 @@
  *   See the LICENCE file for more information.
  */
 
+use serde::Deserialize;
+
 use super::TemplateMap;
 use crate::error::{ExecError, ExecResult};
 use std::{
@@ -25,6 +27,14 @@ pub fn get_global() -> &'static Config {
     GLOBAL_CONFIG.get().unwrap()
 }
 
+// This is the structure expected in the config yaml
+#[derive(Deserialize, Debug, Default, Clone)]
+struct IntermediateParsedConfig {
+    // TODO: TEMP
+    x1: i32,
+}
+
+// This is not the structure expected in the config yaml, but is produced from that.
 #[derive(Debug, Default, Clone)]
 pub struct Config {
     pub file_templates: TemplateMap,
@@ -33,10 +43,17 @@ pub struct Config {
 
 impl Config {
     pub fn load(conf_path: Option<&str>) -> ExecResult<Self> {
+        // load configuration from global config or conf_path if not None
+        let conf_str = Self::read_conf_str(conf_path)?;
+
+        // parse configuration into intermediate struct
+        let conf_obj = serde_yaml::from_str::<IntermediateParsedConfig>(&conf_str)
+            .map_err(|e| ExecError::InvalidConfigError(e.to_string()))?;
+
+        println!("{:?}", conf_obj);
+
         // TODO load templates
         let templates = TemplateMap::new();
-
-        println!("{}", Self::read_conf_str(conf_path)?);
 
         Ok(Config {
             file_templates: templates.clone(),

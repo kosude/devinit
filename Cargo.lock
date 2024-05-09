@@ -126,6 +126,7 @@ dependencies = [
  "clap",
  "colored",
  "dirs",
+ "serde",
  "serde_yaml",
 ]
 

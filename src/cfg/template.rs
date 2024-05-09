@@ -7,9 +7,11 @@
 
 use std::collections::HashMap;
 
-#[derive(Debug, Default, Clone, Copy)]
+use serde::Deserialize;
+
+#[derive(Deserialize, Debug, Default, Clone)]
 pub struct Template {
-    pub str: &'static str,
+    pub str: String,
 }
 
-pub type TemplateMap = HashMap<&'static str, Template>;
+pub type TemplateMap = HashMap<String, Template>;
