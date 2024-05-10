@@ -26,8 +26,8 @@ fn main() {
         println!("{:?}", &cfg::get_global().templates);
 
         match cli.subcommand {
-            CommandVariant::File(args) => Ok(()),
-            CommandVariant::Project(args) => Ok(()),
+            CommandVariant::File(_args) => Ok(()),
+            CommandVariant::Project(_args) => Ok(()),
         }
     }() {
         e.handle();
