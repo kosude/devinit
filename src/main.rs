@@ -23,8 +23,7 @@ fn main() {
         logger::init_logger(cli.subcommand.get_common_args().verbose);
         cfg::init_global(cli.subcommand.get_common_args().config.as_deref())?;
 
-        println!("{:?}", &cfg::get_global().file_templates);
-        println!("{:?}", &cfg::get_global().project_templates);
+        println!("{:?}", &cfg::get_global().templates);
 
         match cli.subcommand {
             CommandVariant::File(args) => Ok(()),
