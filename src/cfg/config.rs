@@ -5,6 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
+use log::info;
 use serde::Deserialize;
 
 use super::{Template, TemplateMap};
@@ -82,16 +83,26 @@ impl Config {
         }
 
         // iterate in reverse so that any explicit path that was previously added is checked first.
-        for c in candidates.iter().rev() {
+        for (i, c) in candidates.iter().rev().enumerate() {
             let path = Path::new(c);
 
             if path.exists() {
                 return Ok((
-                    fs::read_to_string(path)
+                    fs::read_to_string(&path)
                         .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?,
                     path.parent().unwrap().to_path_buf(),
                 ));
             }
+
+            // if the user specified an explicit path, don't check the system ones
+            if conf_path.is_some() && i == 0 {
+                return Err(ExecError::FileReadWriteError(format!(
+                    "Config file not found (explicit path {:#?})",
+                    &path
+                )));
+            }
+
+            info!("Config file miss (not found) at {:#?}", &path);
         }
 
         return Err(ExecError::NoConfigError());

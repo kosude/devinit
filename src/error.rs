@@ -7,7 +7,7 @@
 
 use std::process::exit;
 
-use crate::log;
+use log::error;
 
 pub type ExecResult<T> = Result<T, ExecError>;
 
@@ -22,12 +22,16 @@ impl ExecError {
     fn base_handle_fn(&self, c: &i32) {
         match &self {
             Self::FileReadWriteError(s) => {
-                log::error(format!("File read/write error (error {c}): {s}"))
+                error!("File read/write error (error {c}): {s}");
             }
-            Self::NoConfigError() => log::error(format!("No configuration file found (error {c})")),
-            Self::InvalidConfigError(s) => log::error(format!(
-                "Invalid or malformed config syntax (error {c}): {s}"
-            )),
+            Self::NoConfigError() => {
+                error!(
+                    "No configuration file found (error {c}) (is your devinit installation valid?)"
+                );
+            }
+            Self::InvalidConfigError(s) => {
+                error!("Invalid or malformed config syntax (error {c}): {s}");
+            }
         };
     }
 

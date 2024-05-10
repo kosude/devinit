@@ -14,12 +14,13 @@ use error::ExecResult;
 mod cfg;
 mod cli;
 mod error;
-mod log;
+mod logger;
 
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
         let cli = Cli::parse();
 
+        logger::init_logger(cli.subcommand.get_common_args().verbose);
         cfg::init_global(cli.subcommand.get_common_args().config.as_deref())?;
 
         println!("{:?}", &cfg::get_global().file_templates);
