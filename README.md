@@ -1,5 +1,7 @@
 # devinit
 
+![Lines of code](https://www.aschey.tech/tokei/github.com/kosude/devinit)
+
 
 ## Templating language format
 
@@ -8,6 +10,5 @@ Devinit's templating engine enforces a similar format to [Jinja](https://jinja.p
 | Syntax      | Use case                         |
 |-------------|----------------------------------|
 | `{: ... :}` | Preprocessed directives          |
-| `{% ... %}` | Evaluated statements (no output) |
 | `{{ ... }}` | Variable output                  |
 | `{# ... #}` | Comments                         |
