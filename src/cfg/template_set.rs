@@ -13,9 +13,32 @@ use std::{
 
 use log::error;
 
-use crate::error::{ExecError, ExecResult};
+use crate::{
+    error::{ExecError, ExecResult},
+    templating_engine::Preprocessor,
+};
 
-use super::Template;
+#[derive(Debug, Clone)]
+struct Template {
+    pub id: String,
+    pub literal: String,
+}
+
+impl Template {
+    pub fn load<'a, P: AsRef<Path>>(path: P) -> ExecResult<Template> {
+        let literal = Self::read_template_str(&path.as_ref())?;
+        let preproc = Preprocessor::run(&literal)?;
+
+        Ok(Self {
+            id: preproc.id.to_string(),
+            literal,
+        })
+    }
+
+    fn read_template_str<P: AsRef<Path>>(path: P) -> ExecResult<String> {
+        Ok(fs::read_to_string(&path).map_err(|e| ExecError::FileReadWriteError(e.to_string()))?)
+    }
+}
 
 // templates are stored in hashsets via 'template set entries'
 // this way we can index templates by a value inside their structs, specifically their ID

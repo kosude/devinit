@@ -5,8 +5,8 @@
  *   See the LICENCE file for more information.
  */
 
-mod config;
-pub use config::*;
+mod preprocessor;
+pub use preprocessor::*;
 
-mod template_set;
-pub use template_set::*;
+mod parser;
+pub use parser::*;

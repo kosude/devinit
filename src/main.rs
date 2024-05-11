@@ -15,6 +15,7 @@ mod cfg;
 mod cli;
 mod error;
 mod logger;
+mod templating_engine;
 
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
