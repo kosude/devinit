@@ -16,35 +16,44 @@ pub enum ExecError {
     FileReadWriteError(String),
     NoConfigError(),
     InvalidConfigError(String),
+    TemplateSyntaxError(String),
+    TemplateInvalidTokenError(String),
+    TemplateIncorrectArgsError(String),
 }
 
 impl ExecError {
-    fn base_handle_fn(&self, c: &i32) {
+    fn base_handle_fn(&self) {
         match &self {
             Self::FileReadWriteError(s) => {
-                error!("File read/write error (error {c}): {s}");
+                error!("File read/write error: {s}");
             }
             Self::NoConfigError() => {
-                error!(
-                    "No configuration file found (error {c}) (is your devinit installation valid?)"
-                );
+                error!("No configuration file found (is your devinit installation valid?)");
             }
             Self::InvalidConfigError(s) => {
-                error!("Invalid or malformed config syntax (error {c}): {s}");
+                error!("Invalid or malformed config syntax: {s}");
+            }
+            Self::TemplateSyntaxError(s) => {
+                error!("Error when parsing template: syntax error: {s}");
+            }
+            Self::TemplateInvalidTokenError(s) => {
+                error!("Error when parsing template: invalid token: {s}");
+            }
+            Self::TemplateIncorrectArgsError(s) => {
+                error!("Error when parsing template: incorrect number of args: {s}");
             }
         };
     }
 
     pub fn handle(self) -> ! {
         let c = i32::from(&self);
-        self.base_handle_fn(&c);
+        self.base_handle_fn();
 
         exit(c);
     }
 
     pub fn handle_safe(self) {
-        let c = i32::from(&self);
-        self.base_handle_fn(&c);
+        self.base_handle_fn();
     }
 }
 
@@ -54,6 +63,9 @@ impl From<&ExecError> for i32 {
             ExecError::FileReadWriteError(_) => 1,
             ExecError::NoConfigError() => 2,
             ExecError::InvalidConfigError(_) => 3,
+            ExecError::TemplateSyntaxError(_) => 4,
+            ExecError::TemplateInvalidTokenError(_) => 5,
+            ExecError::TemplateIncorrectArgsError(_) => 6,
         }
     }
 }

@@ -5,37 +5,28 @@
  *   See the LICENCE file for more information.
  */
 
-use std::{
-    collections::HashSet,
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::Path};
 
-use log::error;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::Deserialize;
 
 use crate::error::{ExecError, ExecResult};
 
 #[derive(Deserialize, Debug, Clone)]
-pub enum ExpandedTemplateData {
-    File(String),
-    Project(Vec<String>), // TODO: make a better type for this, as a simple list of strings won't be enough for project templates
-}
-
-#[derive(Deserialize, Debug, Clone)]
 pub struct Template {
     pub id: String,
-    pub data: ExpandedTemplateData,
+    pub literal: String,
 }
 
 impl Template {
     pub fn load<'a, P: AsRef<Path>>(path: P) -> ExecResult<Template> {
-        println!("{}", Self::read_template_str(&path.as_ref())?);
+        let literal = Self::read_template_str(&path.as_ref())?;
+        let preproc = Preprocessor::run(&literal)?;
 
         Ok(Self {
-            // TODO replace this ID with a parsed user-specified ID directive inside the template file
-            id: format!("{}", path.as_ref().file_name().unwrap().to_str().unwrap()),
-            data: ExpandedTemplateData::File("".to_string()),
+            id: preproc.id.to_string(),
+            literal,
         })
     }
 
@@ -44,100 +35,131 @@ impl Template {
     }
 }
 
-// store templates in a hashset via 'template set entries'
-// this way we can index templates by a value inside their structs, specifically their ID
-#[derive(Debug, Clone)]
-struct TemplateSetEntry(Template);
-
-impl Eq for TemplateSetEntry {}
-
-// compare template structs by their ID
-impl PartialEq<TemplateSetEntry> for TemplateSetEntry {
-    fn eq(&self, other: &TemplateSetEntry) -> bool {
-        self.0.id == other.0.id
-    }
-}
-
-// index template structs by hashing their ID
-impl std::hash::Hash for TemplateSetEntry {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.id.hash(state);
-    }
-}
-
-// this allows us to look up a template in the set ysing &str refs
-impl std::borrow::Borrow<str> for TemplateSetEntry {
-    fn borrow(&self) -> &str {
-        &self.0.id
-    }
-}
-
 #[derive(Debug, Clone, Default)]
-pub struct TemplateSet {
-    file_templates: HashSet<TemplateSetEntry>,
-    project_templates: HashSet<TemplateSetEntry>,
+struct Preprocessor {
+    pub id: String,
 }
 
-impl TemplateSet {
-    pub fn new() -> Self {
-        Self {
-            file_templates: HashSet::new(),
-            project_templates: HashSet::new(),
+impl Preprocessor {
+    /// Preprocess the given template literal, returning the results in a struct
+    pub fn run<S: AsRef<str>>(literal: S) -> ExecResult<Self> {
+        lazy_static! {
+            static ref PREPROC_RE: Regex = Regex::new(r"\{:\s*(.*?)\s*:\}").unwrap();
         }
-    }
 
-    pub fn load_file_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
-        let paths = Self::read_templates_dir(dir)?;
-        Self::load_templates_from_path_list(&mut self.file_templates, paths)?;
-
-        Ok(self)
-    }
-
-    pub fn load_project_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
-        let paths = Self::read_templates_dir(dir)?;
-        Self::load_templates_from_path_list(&mut self.project_templates, paths)?;
-
-        Ok(self)
-    }
-
-    fn read_templates_dir<P: AsRef<Path>>(path: P) -> ExecResult<Vec<PathBuf>> {
-        let mut buf = vec![];
-        let Ok(entries) = fs::read_dir(path) else {
-            return Ok(buf);
-        };
-
-        for entry in entries {
-            // get entry (file/folder) metadata
-            let entry = entry.map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
-            let meta = entry
-                .metadata()
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
-
-            if meta.is_dir() {
-                let mut subdir = Self::read_templates_dir(entry.path())?;
-                buf.append(&mut subdir);
-            }
-            if meta.is_file() {
-                buf.push(entry.path());
+        let mut expressions = vec![];
+        for (i, s) in literal.as_ref().lines().enumerate() {
+            // get each expression, surrounded with {: :}
+            for (_, [c]) in PREPROC_RE.captures_iter(&s).map(|c| c.extract()) {
+                expressions.push((c, (i + 1) as i32));
             }
         }
 
-        Ok(buf)
+        let expressions = Self::tokenise_expressions(expressions)?;
+        println!("{:?}", expressions);
+
+        let mut r = Self::default();
+        for expr in expressions {
+            r.evaluate_expression(&expr)?;
+        }
+
+        Ok(r)
     }
 
-    fn load_templates_from_path_list<P: AsRef<Path>>(
-        set: &mut HashSet<TemplateSetEntry>,
-        paths: Vec<P>,
-    ) -> ExecResult<()> {
-        Ok(for p in paths.iter() {
-            let t = TemplateSetEntry(Template::load(p)?);
+    // expressions are passed as a tuple also including the line number that they're on
+    fn tokenise_expressions<S: AsRef<str>>(
+        expressions: Vec<(S, i32)>,
+    ) -> ExecResult<Vec<PreprocessorExpression>> {
+        lazy_static! {
+            static ref SPACE_SEP_RE: Regex = Regex::new(r"([^\s?]+)").unwrap();
+        }
 
-            // check against collisions, warn the user if there are multiple templates with the same name/id
-            if set.contains(&t) {
-                error!("Found duplicated template id: \"{}\"", t.0.id);
-                continue;
+        let mut com = vec![];
+
+        for e in expressions {
+            // separate expression by space
+            let mut words = vec![];
+            for (_, [c]) in SPACE_SEP_RE
+                .captures_iter(&e.0.as_ref())
+                .map(|c| c.extract())
+            {
+                words.push(c);
             }
-            set.insert(t);
-        })
+
+            let opcode = words[0];
+            let mut operands = vec![];
+
+            // get operands (check for invalid ones and join strings together)
+            let mut overflow = String::new();
+            for o in words.iter().skip(1) {
+                // check if an overflow should start, or if we are in the middle of reading one.
+                let overflow_start = o.starts_with("\"") || o.starts_with("'");
+                let overflow_end = o.ends_with("\"") || o.ends_with("'");
+                if !overflow.is_empty() || overflow_start {
+                    let o = &o.replace("\"", "").replace("'", ""); // remove string delimiter from word
+                    if o.len() <= 0 {
+                        // string delimiter was on its own, this can cause problems so we just don't allow it
+                        return Err(ExecError::TemplateSyntaxError(format!(
+                            "Illegal isolated quotation mark on line {}",
+                            e.1
+                        )));
+                    }
+
+                    overflow += o;
+
+                    if overflow_end {
+                        // move the overflow into the operands list and reset it
+                        operands.push(overflow);
+                        overflow = String::new();
+                    } else {
+                        overflow += " "; // re-add the previously removed space
+                    }
+                    continue;
+                }
+
+                operands.push(o.to_string());
+            }
+
+            // form command enum from now-delimited expression
+            com.push(match opcode {
+                "SPECIFY" => {
+                    if operands.len() != 2 {
+                        Err(ExecError::TemplateIncorrectArgsError(format!(
+                            "SPECIFY expression expects 2 arguments on line {}",
+                            e.1
+                        )))
+                    } else {
+                        Ok(PreprocessorExpression::Specify(
+                            operands[0].to_string(),
+                            operands[1].to_string(),
+                        ))
+                    }
+                }
+                // invalid opcode
+                _ => Err(ExecError::TemplateInvalidTokenError(format!(
+                    "\"{}\" on line {}",
+                    words[0], e.1
+                ))),
+            }?)
+        }
+
+        return Ok(com);
     }
+
+    fn evaluate_expression(&mut self, expr: &PreprocessorExpression) -> ExecResult<()> {
+        match expr {
+            PreprocessorExpression::Specify(k, v) => match k.as_str() {
+                "NAME" => {
+                    self.id = v.to_string();
+                }
+                _ => {}
+            },
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
+enum PreprocessorExpression {
+    Specify(String, String),
 }

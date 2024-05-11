@@ -1,3 +1,7 @@
+{# Devinit templating engine example #}
+{{ 254 }}
+{: SPECIFY NAME "C Header Guards" :}
+
 #ifndef $VariableExample
 #define $VariableExample
 

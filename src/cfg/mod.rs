@@ -10,3 +10,6 @@ pub use config::*;
 
 mod template;
 pub use template::*;
+
+mod template_set;
+pub use template_set::*;
