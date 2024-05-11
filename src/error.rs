@@ -19,6 +19,7 @@ pub enum ExecError {
     TemplateSyntaxError(String),
     TemplateInvalidTokenError(String),
     TemplateIncorrectArgsError(String),
+    IdNotFoundError(String),
 }
 
 impl ExecError {
@@ -41,6 +42,9 @@ impl ExecError {
             }
             Self::TemplateIncorrectArgsError(s) => {
                 error!("Error when parsing template: incorrect number of args: {s}");
+            }
+            Self::IdNotFoundError(s) => {
+                error!("No template with id \"{s}\" was found");
             }
         };
     }
@@ -66,6 +70,7 @@ impl From<&ExecError> for i32 {
             ExecError::TemplateSyntaxError(_) => 4,
             ExecError::TemplateInvalidTokenError(_) => 5,
             ExecError::TemplateIncorrectArgsError(_) => 6,
+            ExecError::IdNotFoundError(_) => 7,
         }
     }
 }

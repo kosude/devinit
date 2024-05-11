@@ -19,7 +19,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
-struct Template {
+pub struct Template {
     pub id: String,
     pub literal: String,
 }
@@ -31,7 +31,7 @@ impl Template {
 
         Ok(Self {
             id: preproc.id.to_string(),
-            literal,
+            literal: preproc.clean_literal,
         })
     }
 
@@ -135,5 +135,13 @@ impl TemplateSet {
             }
             set.insert(t);
         })
+    }
+
+    pub fn get_file_template(&self, id: &str) -> ExecResult<&Template> {
+        Ok(&self
+            .file_templates
+            .get(id)
+            .ok_or(ExecError::IdNotFoundError(id.to_string()))?
+            .0)
     }
 }

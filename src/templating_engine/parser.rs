@@ -12,7 +12,9 @@ use crate::error::{ExecError, ExecResult};
 
 lazy_static! {
     /// Preprocessor directive syntax: `{: ... :}`
-    static ref REG_PREPROC_DIRECTIVE: Regex = Regex::new(r"\{:\s*(.*?)\s*:\}").unwrap();
+    static ref REG_PREPROC_DIRECTIVE: Regex = Regex::new(r"\{:\s*(?<argv>.*?)\s*:\}").unwrap();
+    /// Comment syntax: `{# ... #}`
+    static ref REG_COMMENT: Regex = Regex::new(r"\{#.*#\}").unwrap();
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -32,10 +34,10 @@ pub fn find_statements<S: AsRef<str>>(literal: S) -> ExecResult<Vec<Statement>> 
 
     for (i, s) in literal.as_ref().lines().enumerate() {
         // preprocessor directives
-        for (_, [c]) in REG_PREPROC_DIRECTIVE.captures_iter(&s).map(|c| c.extract()) {
+        for (_, [argv]) in REG_PREPROC_DIRECTIVE.captures_iter(&s).map(|c| c.extract()) {
             statements.push(Statement {
                 stype: StatementType::Directive,
-                token_strs: vec![c.to_string()],
+                token_strs: vec![argv.to_string()],
                 line_number: (i + 1) as i32,
             });
         }
@@ -91,4 +93,14 @@ fn split_statement_token_strs(statement: &Statement) -> ExecResult<Vec<String>> 
     }
 
     return Ok(tokens);
+}
+
+pub fn strip_preprocessor_directives<S: AsRef<str>>(literal: S) -> String {
+    REG_PREPROC_DIRECTIVE
+        .replace_all(literal.as_ref(), "")
+        .to_string()
+}
+
+pub fn strip_comments<S: AsRef<str>>(literal: S) -> String {
+    REG_COMMENT.replace_all(literal.as_ref(), "").to_string()
 }

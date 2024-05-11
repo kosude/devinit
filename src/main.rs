@@ -24,7 +24,13 @@ fn main() {
         logger::init_logger(cli.subcommand.get_common_args().verbose);
         cfg::init_global(cli.subcommand.get_common_args().config.as_deref())?;
 
-        println!("{:?}", &cfg::get_global().templates);
+        println!(
+            "{}",
+            &cfg::get_global()
+                .templates
+                .get_file_template("Copyright Header")?
+                .literal
+        );
 
         match cli.subcommand {
             CommandVariant::File(_args) => Ok(()),

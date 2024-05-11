@@ -10,7 +10,7 @@ use crate::{
     templating_engine::{find_statements, StatementType},
 };
 
-use super::Statement;
+use super::{strip_comments, strip_preprocessor_directives, Statement};
 
 /// Struct containing results from preprocessing a template
 #[derive(Debug, Clone, Default)]
@@ -19,12 +19,15 @@ pub struct Preprocessor {
     pub statements: Vec<Statement>,
     /// Id (a.k.a. name) of the template for indexing
     pub id: String,
+
+    /// The given literal string without preprocessor directives or comments
+    pub clean_literal: String,
 }
 
 impl Preprocessor {
     /// Preprocess the given template literal, returning the results in a struct
     pub fn run<S: AsRef<str>>(literal: S) -> ExecResult<Self> {
-        let statements = find_statements(literal)?;
+        let statements = find_statements(&literal.as_ref())?;
 
         let directives = Self::tokenise_directives(
             statements
@@ -34,8 +37,15 @@ impl Preprocessor {
                 .collect(),
         )?;
 
-        let mut r = Self::default();
-        r.statements = statements;
+        // TODO: remove empty lines that are due to removing statements
+        let literal = strip_preprocessor_directives(&literal.as_ref());
+        let literal = strip_comments(&literal);
+
+        let mut r = Self {
+            statements,
+            id: String::new(),
+            clean_literal: literal,
+        };
         for dtv in directives {
             r.evaluate_expression(&dtv)?;
         }
