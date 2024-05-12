@@ -5,6 +5,21 @@
 Devinit is a command-line utility written in Rust that provides the ability to write templates for files and projects and interactively apply them to
 make boilerplate less annoying.
 
+## Command-line examples
+
+```bash
+# Configure a file at path 'licence.txt' with the 'LicenceBlock' template,
+# specifying values for the variables 'name' and 'year'.
+$ devinit file licence.txt "LicenceBlock" -Dname="John Doe" -Dyear="2024"
+
+# Process the template 'EditorConfig' and output the result to stdout.
+$ devinit file --dry-run "EditorConfig"
+
+# Create and populate a folder called 'dotnet-project' from the project
+# template 'DotNet', specifying the variable 'projectName'.
+$ devinit project dotnet-project/ "DotNet" -DprojectName="Utils"
+```
+
 
 ## Templating
 
