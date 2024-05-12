@@ -17,7 +17,7 @@ mod cli;
 mod dry_run;
 mod error;
 mod logger;
-mod templating_engine;
+mod templater;
 
 fn main() {
     if let Err(e) = || -> ExecResult<()> {

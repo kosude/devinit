@@ -7,7 +7,7 @@
 
 use crate::{
     error::{ExecError, ExecResult},
-    templating_engine::Preprocessor,
+    templater::Preprocessor,
 };
 
 use log::error;

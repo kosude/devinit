@@ -7,7 +7,7 @@
 
 use crate::{
     error::{ExecError, ExecResult},
-    templating_engine::{find_statements, StatementType},
+    templater::{find_statements, StatementType},
 };
 
 use super::{strip_comments, strip_preprocessor_directives, Statement};
