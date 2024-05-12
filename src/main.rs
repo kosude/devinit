@@ -32,7 +32,7 @@ fn main() {
                     Ok(template_dry_run(
                         cfg::get_global()
                             .templates
-                            .get_file_template("C Header Guards")?,
+                            .get_file_template(&args.com.template)?,
                     ))
                 } else {
                     Ok(println!(
@@ -46,7 +46,7 @@ fn main() {
                     Ok(template_dry_run(
                         cfg::get_global()
                             .templates
-                            .get_project_template("C Header Guards")?,
+                            .get_project_template(&args.com.template)?,
                     ))
                 } else {
                     Ok(println!(

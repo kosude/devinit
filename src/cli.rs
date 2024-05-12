@@ -33,20 +33,20 @@ impl CommandVariant {
 #[derive(Args, Debug)]
 pub struct FileArgs {
     #[command(flatten)]
-    pub output: OutputArgGroup,
+    pub com: CommonArgGroup,
 
     #[command(flatten)]
-    pub com: CommonArgGroup,
+    pub output: OutputArgGroup,
 }
 
 /// Initialise a new folder with a specified project template profile
 #[derive(Args, Debug)]
 pub struct ProjectArgs {
     #[command(flatten)]
-    pub output: OutputArgGroup,
+    pub com: CommonArgGroup,
 
     #[command(flatten)]
-    pub com: CommonArgGroup,
+    pub output: OutputArgGroup,
 }
 
 #[derive(Args, Debug)]
@@ -62,6 +62,9 @@ pub struct OutputArgGroup {
 
 #[derive(Args, Debug)]
 pub struct CommonArgGroup {
+    /// The name of the template to use
+    pub template: String,
+
     /// Specify path to the devinit configuration file
     #[arg(long)]
     pub config: Option<String>,
