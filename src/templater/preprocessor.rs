@@ -21,7 +21,7 @@ pub struct Preprocessor {
     pub id: String,
 
     /// The given literal string without preprocessor directives or comments
-    pub clean_literal: String,
+    pub literal: String,
 }
 
 impl Preprocessor {
@@ -43,7 +43,7 @@ impl Preprocessor {
         let mut r = Self {
             statements,
             id: String::new(),
-            clean_literal: literal,
+            literal,
         };
         for dtv in directives {
             r.evaluate_expression(&dtv)?;
@@ -75,10 +75,10 @@ impl Preprocessor {
                     }
                 }
                 // invalid opcode
-                _ => Err(ExecError::TemplateInvalidTokenError(format!(
-                    "\"{}\" on line {}",
-                    opcode, e.line_number
-                ))),
+                _ => Err(ExecError::TemplateInvalidTokenError(
+                    format!("\"{}\" on line {}", opcode, e.line_number),
+                    "Unknown".to_string(),
+                )),
             }?)
         }
 

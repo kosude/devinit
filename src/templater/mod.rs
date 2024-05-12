@@ -11,5 +11,5 @@ pub use parser::*;
 mod preprocessor;
 pub use preprocessor::*;
 
-mod substitute;
-pub use substitute::*;
+mod evaluator;
+pub use evaluator::*;

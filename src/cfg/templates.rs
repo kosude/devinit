@@ -22,15 +22,13 @@ use std::{
 pub trait Template: fmt::Display + fmt::Debug + Clone {
     fn load<P: AsRef<Path>>(path: P) -> ExecResult<impl Template>;
 
-    fn id(&self) -> &String;
-    fn literal(&self) -> &String;
+    fn pre(&self) -> &Preprocessor;
 }
 
 /// A template to initialise a single file
 #[derive(Debug, Clone)]
 pub struct FileTemplate {
-    id: String,
-    literal: String,
+    pre: Preprocessor,
 }
 
 impl Template for FileTemplate {
@@ -38,20 +36,13 @@ impl Template for FileTemplate {
     fn load<P: AsRef<Path>>(path: P) -> ExecResult<FileTemplate> {
         let literal =
             fs::read_to_string(&path).map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
-        let preproc = Preprocessor::run(&literal)?;
+        let pre = Preprocessor::run(&literal)?;
 
-        Ok(Self {
-            id: preproc.id.to_string(),
-            literal: preproc.clean_literal,
-        })
+        Ok(Self { pre })
     }
 
-    fn id(&self) -> &String {
-        &self.id
-    }
-
-    fn literal(&self) -> &String {
-        &self.literal
+    fn pre(&self) -> &Preprocessor {
+        &self.pre
     }
 }
 
@@ -65,11 +56,7 @@ impl Template for ProjectTemplate {
         todo!()
     }
 
-    fn id(&self) -> &String {
-        todo!()
-    }
-
-    fn literal(&self) -> &String {
+    fn pre(&self) -> &Preprocessor {
         todo!()
     }
 }
@@ -82,17 +69,17 @@ struct TemplateSetEntry<T: Template>(T);
 impl<T: Template> Eq for TemplateSetEntry<T> {}
 impl<T: Template> PartialEq<TemplateSetEntry<T>> for TemplateSetEntry<T> {
     fn eq(&self, other: &TemplateSetEntry<T>) -> bool {
-        self.0.id() == other.0.id()
+        self.0.pre().id == other.0.pre().id
     }
 }
 impl<T: Template> std::hash::Hash for TemplateSetEntry<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.id().hash(state);
+        self.0.pre().id.hash(state);
     }
 }
 impl<T: Template> std::borrow::Borrow<str> for TemplateSetEntry<T> {
     fn borrow(&self) -> &str {
-        &self.0.id()
+        &self.0.pre().id
     }
 }
 
@@ -167,7 +154,7 @@ impl TemplateSet {
 
             // check against collisions, warn the user if there are multiple templates with the same name/id
             if set.contains(&t) {
-                error!("Found duplicated template id: \"{}\"", t.0.id());
+                error!("Found duplicated template id: \"{}\"", t.0.pre().id);
                 continue;
             }
             set.insert(t);

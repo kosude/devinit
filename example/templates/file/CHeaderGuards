@@ -1,6 +1,6 @@
 {# Devinit templating engine example #}
 {: SPECIFY NAME "C Header Guards" :}
-#ifndef {{ VariableExample }}
-#define {{ VariableExample }}
+#ifndef {{ $guardToken }}
+#define {{ $guardToken }}
 
 #endif

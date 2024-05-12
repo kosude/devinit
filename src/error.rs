@@ -16,10 +16,12 @@ pub enum ExecError {
     FileReadWriteError(String),
     NoConfigError(),
     InvalidConfigError(String),
-    TemplateSyntaxError(String),
-    TemplateInvalidTokenError(String),
-    TemplateIncorrectArgsError(String),
     IdNotFoundError(String),
+    TemplateSyntaxError(String),
+    TemplateInvalidTokenError(String, String),
+    TemplateIncorrectArgsError(String),
+    TemplateUnknownVariableError(String, String),
+    TemplateMalformedExpressionError(String),
 }
 
 impl ExecError {
@@ -34,17 +36,23 @@ impl ExecError {
             Self::InvalidConfigError(s) => {
                 error!("Invalid or malformed config syntax: {s}");
             }
+            Self::IdNotFoundError(s) => {
+                error!("No template was found with id {s}");
+            }
             Self::TemplateSyntaxError(s) => {
                 error!("Error when parsing template: syntax error: {s}");
             }
-            Self::TemplateInvalidTokenError(s) => {
-                error!("Error when parsing template: invalid token: {s}");
+            Self::TemplateInvalidTokenError(s1, s2) => {
+                error!("Error when parsing template \"{s2}\": invalid token: {s1}");
             }
             Self::TemplateIncorrectArgsError(s) => {
                 error!("Error when parsing template: incorrect number of args: {s}");
             }
-            Self::IdNotFoundError(s) => {
-                error!("No template was found with id {s}");
+            Self::TemplateUnknownVariableError(s1, s2) => {
+                error!("Unknown variable {s1} in template \"{s2}\"");
+            }
+            Self::TemplateMalformedExpressionError(s) => {
+                error!("Malformed template expression: {s}");
             }
         };
     }
@@ -67,10 +75,12 @@ impl From<&ExecError> for i32 {
             ExecError::FileReadWriteError(_) => 1,
             ExecError::NoConfigError() => 2,
             ExecError::InvalidConfigError(_) => 3,
-            ExecError::TemplateSyntaxError(_) => 4,
-            ExecError::TemplateInvalidTokenError(_) => 5,
-            ExecError::TemplateIncorrectArgsError(_) => 6,
-            ExecError::IdNotFoundError(_) => 7,
+            ExecError::IdNotFoundError(_) => 4,
+            ExecError::TemplateSyntaxError(_) => 5,
+            ExecError::TemplateInvalidTokenError(_, _) => 6,
+            ExecError::TemplateIncorrectArgsError(_) => 7,
+            ExecError::TemplateUnknownVariableError(_, _) => 8,
+            ExecError::TemplateMalformedExpressionError(_) => 9,
         }
     }
 }

@@ -5,6 +5,8 @@
  *   See the LICENCE file for more information.
  */
 
+use std::error::Error;
+
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser, Debug)]
@@ -65,6 +67,10 @@ pub struct CommonArgGroup {
     /// The name of the template to use
     pub template: String,
 
+    /// Define variables to be substituted in the template
+    #[arg(short = 'D', number_of_values = 1, value_parser = parse_key_val::<String, String>)]
+    pub var_defines: Vec<(String, String)>,
+
     /// Specify path to the devinit configuration file
     #[arg(long)]
     pub config: Option<String>,
@@ -72,4 +78,17 @@ pub struct CommonArgGroup {
     /// Print verbose output
     #[arg(short, long)]
     pub verbose: bool,
+}
+
+fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Sync + Send>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + Sync + Send + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + Sync + Send + 'static,
+{
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{}`", s))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }

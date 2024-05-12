@@ -9,10 +9,6 @@ use std::fmt;
 
 use crate::cfg::{FileTemplate, ProjectTemplate, Template};
 
-pub fn template_dry_run<T: Template>(template: &T) {
-    println!("{}", template);
-}
-
 const INDENT_PREFIX: &'static str = "    ";
 
 impl fmt::Display for FileTemplate {
@@ -20,9 +16,10 @@ impl fmt::Display for FileTemplate {
         write!(
             f,
             "\"{}\":\n{}{}",
-            self.id(),
+            self.pre().id,
             &INDENT_PREFIX,
-            self.literal()
+            self.pre()
+                .literal
                 .replace("\n", format!("\n{}", INDENT_PREFIX).as_str())
         )
     }

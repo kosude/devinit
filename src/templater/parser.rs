@@ -13,6 +13,8 @@ use crate::error::{ExecError, ExecResult};
 lazy_static! {
     /// Preprocessor directive syntax: `{: ... :}`
     static ref REG_PREPROC_DIRECTIVE: Regex = Regex::new(r"\{:\s*(?<argv>.*?)\s*:\}").unwrap();
+    /// Expression syntax: `{{ ... }}`
+    static ref REG_EXPRESSION: Regex = Regex::new(r"(?<pre>\{\{\s*)(?<expr>.*?)(?<post>\s*\}\})").unwrap();
     /// Comment syntax: `{# ... #}`
     static ref REG_COMMENT: Regex = Regex::new(r"\{#.*#\}").unwrap();
 }
@@ -20,12 +22,14 @@ lazy_static! {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum StatementType {
     Directive,
+    Expression,
 }
 /// A struct to represent a statement, e.g. `SPECIFY NAME "ExampleName"`
 #[derive(Debug, Clone)]
 pub struct Statement {
     pub stype: StatementType,
     pub token_strs: Vec<String>,
+    pub literal: Option<String>,
     pub line_number: i32,
 }
 
@@ -38,6 +42,22 @@ pub fn find_statements<S: AsRef<str>>(literal: S) -> ExecResult<Vec<Statement>> 
             statements.push(Statement {
                 stype: StatementType::Directive,
                 token_strs: vec![caps["argv"].to_string()],
+                literal: None,
+                line_number: (i + 1) as i32,
+            });
+        }
+
+        // expressions
+        for caps in REG_EXPRESSION.captures_iter(&s) {
+            statements.push(Statement {
+                stype: StatementType::Expression,
+                token_strs: vec![caps["expr"].to_string()],
+                literal: Some(format!(
+                    "{}{}{}",
+                    caps["pre"].to_string(),
+                    caps["expr"].to_string(),
+                    caps["post"].to_string()
+                )),
                 line_number: (i + 1) as i32,
             });
         }
@@ -55,10 +75,10 @@ pub fn find_statements<S: AsRef<str>>(literal: S) -> ExecResult<Vec<Statement>> 
 fn split_statement_token_strs(statement: &Statement) -> ExecResult<Vec<String>> {
     // Delimit string by whitespace
     // (note that token_strs is, at this point, expected to be a vector of one element that contans the whole string)
-    let words: Vec<String> = statement.token_strs[0]
+    let words = statement.token_strs[0]
         .split_whitespace()
         .map(|x| x.to_string())
-        .collect();
+        .collect::<Vec<_>>();
 
     let mut tokens = vec![];
     let mut overflow = String::new();
