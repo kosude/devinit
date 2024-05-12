@@ -44,7 +44,7 @@ impl ExecError {
                 error!("Error when parsing template: incorrect number of args: {s}");
             }
             Self::IdNotFoundError(s) => {
-                error!("No template with id \"{s}\" was found");
+                error!("No template was found with id {s}");
             }
         };
     }

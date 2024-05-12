@@ -8,5 +8,5 @@
 mod config;
 pub use config::*;
 
-mod template_set;
-pub use template_set::*;
+mod templates;
+pub use templates::*;

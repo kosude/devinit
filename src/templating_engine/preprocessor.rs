@@ -37,7 +37,6 @@ impl Preprocessor {
                 .collect(),
         )?;
 
-        // TODO: remove empty lines that are due to removing statements
         let literal = strip_preprocessor_directives(&literal.as_ref());
         let literal = strip_comments(&literal);
 

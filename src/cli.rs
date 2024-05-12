@@ -16,9 +16,7 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 pub enum CommandVariant {
-    #[clap(visible_aliases = &["f"])]
     File(FileArgs),
-    #[clap(visible_aliases = &["p"])]
     Project(ProjectArgs),
 }
 
@@ -34,8 +32,8 @@ impl CommandVariant {
 /// Initialise a file with a specified template profile
 #[derive(Args, Debug)]
 pub struct FileArgs {
-    /// Path to output file (will be created if necessary)
-    pub file: String,
+    #[command(flatten)]
+    pub output: OutputArgGroup,
 
     #[command(flatten)]
     pub com: CommonArgGroup,
@@ -44,20 +42,31 @@ pub struct FileArgs {
 /// Initialise a new folder with a specified project template profile
 #[derive(Args, Debug)]
 pub struct ProjectArgs {
-    /// Path to output directory (will be created if necessary)
-    pub folder: String,
+    #[command(flatten)]
+    pub output: OutputArgGroup,
 
     #[command(flatten)]
     pub com: CommonArgGroup,
 }
 
 #[derive(Args, Debug)]
+#[group(required = true, multiple = false)]
+pub struct OutputArgGroup {
+    /// Path to output file/directory (will be created if necessary)
+    pub path: Option<String>,
+
+    /// Print the preprocessed template to stdout instead of to a file
+    #[arg(short, long)]
+    pub dry_run: bool,
+}
+
+#[derive(Args, Debug)]
 pub struct CommonArgGroup {
     /// Specify path to the devinit configuration file
-    #[arg(long, action)]
+    #[arg(long)]
     pub config: Option<String>,
 
     /// Print verbose output
-    #[arg(short, long, action)]
+    #[arg(short, long)]
     pub verbose: bool,
 }

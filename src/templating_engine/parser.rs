@@ -96,14 +96,15 @@ fn split_statement_token_strs(statement: &Statement) -> ExecResult<Vec<String>> 
 }
 
 pub fn strip_preprocessor_directives<S: AsRef<str>>(literal: S) -> String {
-    replace_all_strip_newlines(&literal, &REG_PREPROC_DIRECTIVE)
+    remove_all_incl_newlines(&literal, &REG_PREPROC_DIRECTIVE)
 }
 
 pub fn strip_comments<S: AsRef<str>>(literal: S) -> String {
-    replace_all_strip_newlines(&literal, &REG_COMMENT)
+    remove_all_incl_newlines(&literal, &REG_COMMENT)
 }
 
-fn replace_all_strip_newlines<S: AsRef<str>>(str: S, regex: &Regex) -> String {
+/// Remove all matches of `regex` in `str`, and strip any empty lines that this leads to.
+fn remove_all_incl_newlines<S: AsRef<str>>(str: S, regex: &Regex) -> String {
     let mut r_str = str.as_ref().to_string();
     let mut rem_amt = 0; // we store the amount of characters removed in `rem_amt` so as to avoid reading outside the bounds of `r_str`.
 
@@ -126,7 +127,7 @@ fn replace_all_strip_newlines<S: AsRef<str>>(str: S, regex: &Regex) -> String {
 
 /// Returns `None` if the substring at the given index is a non-empty line, or `Some(x, n)` if it
 /// is an empty line, where `x` is the index of the first newline character, and `n` is the amount of
-/// newline characters.
+/// newline characters. Both LF and CRLF newlines are handled.
 fn has_newline_at_index<S: AsRef<str>>(str: S, i: usize, len: usize) -> Option<(usize, usize)> {
     let b = str.as_ref().as_bytes();
 
@@ -135,9 +136,11 @@ fn has_newline_at_index<S: AsRef<str>>(str: S, i: usize, len: usize) -> Option<(
     let at0 = i < 2;
     let atlen = i >= len;
     let (x, n, r) = if at0 || atlen {
-        let ii = if at0 { i } else { i - 1 };
-        // if LF, then just check for a newline
-        // else if CRLF, then check for a carriage return and a newline
+        // ensuring we don't read outside `str` if `i` is at the end of it
+        let ii = if atlen { i - 1 } else { i };
+
+        // if LF, then just check for a line feed
+        // else if CRLF, then check for a carriage return and a line feed
         if b[ii] == b'\n' {
             (ii, 1, true)
         } else if b[ii] == b'\r' && b[ii + 1] == b'\n' {
@@ -146,8 +149,8 @@ fn has_newline_at_index<S: AsRef<str>>(str: S, i: usize, len: usize) -> Option<(
             (0, 0, false)
         }
     } else {
-        // if LF, then check for 2 newlines in sequence
-        // else if CRLF, then check for 2 carriage return and newline pairs
+        // if LF, then check for 2 line feeds in sequence
+        // else if CRLF, then check for 2 carriage return and line feed pairs
         if b[i - 1] == b'\n' && b[i] == b'\n' {
             (i - 1, 1, true)
         } else if b[i - 2] == b'\r' && b[i - 1] == b'\n' && b[i] == b'\r' && b[i + 1] == b'\n' {
