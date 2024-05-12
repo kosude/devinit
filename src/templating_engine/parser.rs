@@ -34,10 +34,10 @@ pub fn find_statements<S: AsRef<str>>(literal: S) -> ExecResult<Vec<Statement>> 
 
     for (i, s) in literal.as_ref().lines().enumerate() {
         // preprocessor directives
-        for (_, [argv]) in REG_PREPROC_DIRECTIVE.captures_iter(&s).map(|c| c.extract()) {
+        for caps in REG_PREPROC_DIRECTIVE.captures_iter(&s) {
             statements.push(Statement {
                 stype: StatementType::Directive,
-                token_strs: vec![argv.to_string()],
+                token_strs: vec![caps["argv"].to_string()],
                 line_number: (i + 1) as i32,
             });
         }
@@ -96,11 +96,70 @@ fn split_statement_token_strs(statement: &Statement) -> ExecResult<Vec<String>> 
 }
 
 pub fn strip_preprocessor_directives<S: AsRef<str>>(literal: S) -> String {
-    REG_PREPROC_DIRECTIVE
-        .replace_all(literal.as_ref(), "")
-        .to_string()
+    replace_all_strip_newlines(&literal, &REG_PREPROC_DIRECTIVE)
 }
 
 pub fn strip_comments<S: AsRef<str>>(literal: S) -> String {
-    REG_COMMENT.replace_all(literal.as_ref(), "").to_string()
+    replace_all_strip_newlines(&literal, &REG_COMMENT)
+}
+
+fn replace_all_strip_newlines<S: AsRef<str>>(str: S, regex: &Regex) -> String {
+    let mut r_str = str.as_ref().to_string();
+    let mut rem_amt = 0; // we store the amount of characters removed in `rem_amt` so as to avoid reading outside the bounds of `r_str`.
+
+    for mat in regex.find_iter(&str.as_ref()) {
+        let s = mat.start() - rem_amt;
+        let e = mat.end() - rem_amt;
+
+        r_str.replace_range(s..e, "");
+        rem_amt += e - s;
+
+        // remove any newlines that resulted from the strip operation
+        if let Some((x, n)) = has_newline_at_index(&r_str, s, r_str.len()) {
+            r_str.replace_range(x..(x + n), "");
+            rem_amt += n;
+        }
+    }
+
+    r_str
+}
+
+/// Returns `None` if the substring at the given index is a non-empty line, or `Some(x, n)` if it
+/// is an empty line, where `x` is the index of the first newline character, and `n` is the amount of
+/// newline characters.
+fn has_newline_at_index<S: AsRef<str>>(str: S, i: usize, len: usize) -> Option<(usize, usize)> {
+    let b = str.as_ref().as_bytes();
+
+    // check if the string at index `s` now has a new line (either LF or CRLF) so it can be removed
+    // `nl` is true if there is nothing else on the line before or after the removed statement, and false if not.
+    let at0 = i < 2;
+    let atlen = i >= len;
+    let (x, n, r) = if at0 || atlen {
+        let ii = if at0 { i } else { i - 1 };
+        // if LF, then just check for a newline
+        // else if CRLF, then check for a carriage return and a newline
+        if b[ii] == b'\n' {
+            (ii, 1, true)
+        } else if b[ii] == b'\r' && b[ii + 1] == b'\n' {
+            (ii, 2, true)
+        } else {
+            (0, 0, false)
+        }
+    } else {
+        // if LF, then check for 2 newlines in sequence
+        // else if CRLF, then check for 2 carriage return and newline pairs
+        if b[i - 1] == b'\n' && b[i] == b'\n' {
+            (i - 1, 1, true)
+        } else if b[i - 2] == b'\r' && b[i - 1] == b'\n' && b[i] == b'\r' && b[i + 1] == b'\n' {
+            (i - 2, 2, true)
+        } else {
+            (0, 0, false)
+        }
+    };
+
+    if r {
+        Some((x, n))
+    } else {
+        None
+    }
 }

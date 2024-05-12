@@ -31,6 +31,14 @@ fn main() {
                 .get_file_template("Copyright Header")?
                 .literal
         );
+        println!("=====");
+        println!(
+            "{}",
+            &cfg::get_global()
+                .templates
+                .get_file_template("C Header Guards")?
+                .literal
+        );
 
         match cli.subcommand {
             CommandVariant::File(_args) => Ok(()),
