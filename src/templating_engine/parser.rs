@@ -48,7 +48,7 @@ pub fn find_statements<S: AsRef<str>>(literal: S) -> ExecResult<Vec<Statement>> 
         s.token_strs = split_statement_token_strs(s)?;
     }
 
-    return Ok(statements);
+    Ok(statements)
 }
 
 /// Split a single-string statement into a vector of token strings, considering 'overflows' (i.e. processing strings into one token each)
@@ -92,7 +92,7 @@ fn split_statement_token_strs(statement: &Statement) -> ExecResult<Vec<String>> 
         tokens.push(o.to_string());
     }
 
-    return Ok(tokens);
+    Ok(tokens)
 }
 
 pub fn strip_preprocessor_directives<S: AsRef<str>>(literal: S) -> String {

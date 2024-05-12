@@ -114,6 +114,6 @@ impl Config {
             dirs.push(config_dir.join("devinit").join("devinitrc.yml"));
         }
 
-        return dirs;
+        dirs
     }
 }

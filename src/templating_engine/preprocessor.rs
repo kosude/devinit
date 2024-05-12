@@ -83,7 +83,7 @@ impl Preprocessor {
             }?)
         }
 
-        return Ok(com);
+        Ok(com)
     }
 
     fn evaluate_expression(&mut self, expr: &PreprocessorDirective) -> ExecResult<()> {
