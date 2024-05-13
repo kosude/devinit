@@ -26,7 +26,8 @@ impl fmt::Display for FileTemplate {
 }
 
 impl fmt::Display for ProjectTemplate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO displaying project templates
         todo!()
     }
 }

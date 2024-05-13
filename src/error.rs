@@ -21,6 +21,7 @@ pub enum ExecError {
     TemplateInvalidTokenError(String, String),
     TemplateIncorrectArgsError(String),
     TemplateUnknownVariableError(String, String),
+    TemplateUnknownFunctionError(String, String),
     TemplateMalformedExpressionError(String),
 }
 
@@ -51,6 +52,9 @@ impl ExecError {
             Self::TemplateUnknownVariableError(s1, s2) => {
                 error!("Unknown variable {s1} in template \"{s2}\"");
             }
+            Self::TemplateUnknownFunctionError(s1, s2) => {
+                error!("Unknown function {s1} in template \"{s2}\"");
+            }
             Self::TemplateMalformedExpressionError(s) => {
                 error!("Malformed template expression: {s}");
             }
@@ -80,7 +84,8 @@ impl From<&ExecError> for i32 {
             ExecError::TemplateInvalidTokenError(_, _) => 6,
             ExecError::TemplateIncorrectArgsError(_) => 7,
             ExecError::TemplateUnknownVariableError(_, _) => 8,
-            ExecError::TemplateMalformedExpressionError(_) => 9,
+            ExecError::TemplateUnknownFunctionError(_, _) => 9,
+            ExecError::TemplateMalformedExpressionError(_) => 10,
         }
     }
 }

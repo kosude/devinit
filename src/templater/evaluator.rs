@@ -9,18 +9,22 @@ use std::collections::HashMap;
 
 use crate::error::{ExecError, ExecResult};
 
-use super::{Preprocessor, StatementType};
+use super::{load_function_map, Preprocessor, StatementType, TemplateFn};
 
 #[derive(Debug, Clone, Copy)]
 struct Expression<'a> {
     literal: &'a str,
     tokens: &'a Vec<String>,
+    line_number: &'a i32,
 }
 
 /// A struct containing values obtained after evaluating a template
 pub struct Evaluator {
     /// A variable mapping variable names to their string values
     state: HashMap<String, String>,
+
+    /// A variable mapping function names to their bodies
+    functions: HashMap<&'static str, Box<TemplateFn>>,
 
     /// The literal template string with expressions evaluated
     pub eval_literal: String,
@@ -36,11 +40,13 @@ impl Evaluator {
             .map(|x| Expression {
                 literal: x.literal.as_ref().unwrap(),
                 tokens: &x.token_strs,
+                line_number: &x.line_number,
             })
             .collect::<Vec<_>>();
 
         let mut res = Self {
             state: state.clone(),
+            functions: load_function_map(),
             eval_literal: preproc.literal.clone(),
         };
 
@@ -58,27 +64,46 @@ impl Evaluator {
         expr: &Expression,
         template_id: S,
     ) -> ExecResult<String> {
-        for t in expr.tokens {
-            // this is a variable - currently assume retrieval (assignment not supported yet)
-            if t.starts_with("$") {
-                return Ok(self
-                    .state
-                    .get(&t[1..])
-                    .ok_or(ExecError::TemplateUnknownVariableError(
-                        t[1..].to_string(),
-                        template_id.as_ref().to_string(),
-                    ))
-                    .cloned()?);
-            }
+        let first = &expr.tokens[0];
 
-            return Err(ExecError::TemplateInvalidTokenError(
-                t.to_string(),
-                template_id.as_ref().to_string(),
-            ));
+        // calling a function
+        if !&first.starts_with("$") {
+            let fun = self.functions.get(first.as_str()).ok_or(
+                ExecError::TemplateUnknownFunctionError(
+                    first.to_string(),
+                    template_id.as_ref().to_string(),
+                ),
+            )?;
+
+            // iterate through each parameter and expand any variables
+            let params = expr
+                .tokens
+                .iter()
+                .skip(1)
+                .map(|t| {
+                    if t.starts_with("$") {
+                        self.read_variable(t, template_id.as_ref())
+                    } else {
+                        Ok(t)
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+
+            Ok((&fun)(params))
         }
+        // just reading a variable
+        else {
+            Ok(self.read_variable(first, template_id.as_ref())?.to_string())
+        }
+    }
 
-        return Err(ExecError::TemplateMalformedExpressionError(
-            expr.literal.to_string(),
-        ));
+    fn read_variable<S: AsRef<str>>(&self, tok: S, template_id: &str) -> ExecResult<&String> {
+        let ident = &tok.as_ref()[1..];
+        self.state
+            .get(ident)
+            .ok_or(ExecError::TemplateUnknownVariableError(
+                ident.to_string(),
+                template_id.to_string(),
+            ))
     }
 }

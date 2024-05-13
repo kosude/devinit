@@ -5,11 +5,14 @@
  *   See the LICENCE file for more information.
  */
 
+mod evaluator;
+pub use evaluator::*;
+
+mod functions;
+pub use functions::*;
+
 mod parser;
 pub use parser::*;
 
 mod preprocessor;
 pub use preprocessor::*;
-
-mod evaluator;
-pub use evaluator::*;
