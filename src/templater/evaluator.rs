@@ -15,7 +15,6 @@ use super::{load_function_map, Preprocessor, StatementType, TemplateFn};
 struct Expression<'a> {
     literal: &'a str,
     tokens: &'a Vec<String>,
-    line_number: &'a i32,
 }
 
 /// A struct containing values obtained after evaluating a template
@@ -40,7 +39,6 @@ impl Evaluator {
             .map(|x| Expression {
                 literal: x.literal.as_ref().unwrap(),
                 tokens: &x.token_strs,
-                line_number: &x.line_number,
             })
             .collect::<Vec<_>>();
 
