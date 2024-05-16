@@ -82,6 +82,7 @@ where each key is replaced with its value in the licence text (for example, `yea
 
 ## Planned features
 
+ - VS Code integration (extension)
  - Project templates
  - Function parameter validation (i.e. check no. of parameters passed to template funcs)
  - Line breaking - function to split a multi-line string down into max-length lines
