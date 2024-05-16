@@ -35,29 +35,30 @@ impl CommandVariant {
 #[derive(Args, Debug)]
 pub struct FileArgs {
     #[command(flatten)]
-    pub com: CommonArgGroup,
+    pub output: OutputArgGroup,
 
     #[command(flatten)]
-    pub output: OutputArgGroup,
+    pub com: CommonArgGroup,
 }
 
 /// Initialise a new folder with a specified project template profile
 #[derive(Args, Debug)]
 pub struct ProjectArgs {
     #[command(flatten)]
-    pub com: CommonArgGroup,
+    pub output: OutputArgGroup,
 
     #[command(flatten)]
-    pub output: OutputArgGroup,
+    pub com: CommonArgGroup,
 }
 
 #[derive(Args, Debug)]
 #[group(required = true, multiple = false)]
 pub struct OutputArgGroup {
-    /// Path to output file/directory (will be created if necessary)
+    /// Print the processed template to this path
+    #[arg(short, long)]
     pub path: Option<String>,
 
-    /// Print the preprocessed template to stdout instead of to a file
+    /// Print the processed template to stdout instead of to a file
     #[arg(short, long)]
     pub dry_run: bool,
 }
