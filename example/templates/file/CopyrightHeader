@@ -1,3 +1,2 @@
 {: SPECIFY NAME "Copyright Header" :}
-{# This is a comment #}
-// Copyright (c) {{ test_func $year hello world }} Jack {#inline#}Bennett
+{{ licence "MIT" text year=2024 "copyright holders=Jack Bennett" }}

@@ -87,6 +87,7 @@ impl Evaluator {
                 })
                 .collect::<Result<Vec<_>, _>>()?;
 
+            // TODO: validate parameter list length
             Ok((&fun)(params))
         }
         // just reading a variable
