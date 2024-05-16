@@ -5,7 +5,6 @@
  *   See the LICENCE file for more information.
  */
 
-use log::info;
 use serde::Deserialize;
 
 use super::TemplateSet;
@@ -94,8 +93,6 @@ impl Config {
                     &path
                 )));
             }
-
-            info!("Config file miss (not found) at {:#?}", &path);
         }
 
         Err(ExecError::NoConfigError())

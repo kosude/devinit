@@ -75,10 +75,9 @@ pub struct CommonArgGroup {
     /// Specify path to the devinit configuration file
     #[arg(long)]
     pub config: Option<String>,
-
-    /// Print verbose output
-    #[arg(short, long)]
-    pub verbose: bool,
+    // /// Print verbose output
+    // #[arg(short, long)]
+    // pub verbose: bool,
 }
 
 fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Sync + Send>>

@@ -24,7 +24,7 @@ fn main() {
     if let Err(e) = || -> ExecResult<()> {
         let args = Cli::parse();
 
-        logger::init_logger(args.subcommand.get_common_args().verbose);
+        logger::init_logger(false); // hard-coding verbosity to false for now since there's currently no need for a verbose flag
         cfg::init_global(args.subcommand.get_common_args().config.as_deref())?;
 
         let (pre, state, output) = match args.subcommand {
