@@ -10,6 +10,7 @@ use std::process::exit;
 
 pub type ExecResult<T> = Result<T, ExecError>;
 
+// TODO: chore: check each error and remove unused ones
 #[derive(Debug)]
 pub enum ExecError {
     FileReadWriteError(String),

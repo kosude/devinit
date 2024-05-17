@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use std::convert::TryFrom;
+use std::collections::HashMap;
 
 use super::{FileTemplate, ProjectTemplate, Template};
 use crate::error::{ExecError, ExecResult};
@@ -21,7 +21,10 @@ pub trait Renderer<'a> {
     type Template;
     type Output;
 
-    fn new(template: &'a Self::Template) -> ExecResult<RendererVariant>;
+    fn new(
+        template: &'a Self::Template,
+        vars_state: HashMap<String, String>,
+    ) -> ExecResult<RendererVariant>;
     fn render(&self) -> ExecResult<Self::Output>;
 }
 
@@ -37,15 +40,23 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
     type Output = String;
 
     /// Initialise a new renderer for the given file template
-    fn new(template: &'a Self::Template) -> ExecResult<RendererVariant> {
+    fn new(
+        template: &'a Self::Template,
+        vars_state: HashMap<String, String>,
+    ) -> ExecResult<RendererVariant> {
         let name = &template.name();
         let literal = &template.literal();
 
         let mut tera = Tera::default();
+        // TODO: more descriptive parsing error messages
         tera.add_raw_template(&name, &literal)
             .map_err(|e| ExecError::TemplateParseError(name.to_string(), e.to_string()))?;
 
-        let context = Context::new();
+        // build context from given parameters
+        let mut context = Context::new();
+        for (k, v) in &vars_state {
+            context.insert(k, &v);
+        }
 
         Ok(RendererVariant::File(Self {
             tera,
@@ -57,6 +68,7 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
     /// Render the file, producing evaluated string output
     fn render(&self) -> ExecResult<Self::Output> {
         let name = &self.template.name();
+        // TODO: more descriptive render errors than just 'render error'
         self.tera
             .render(&name, &self.context)
             .map_err(|e| ExecError::TemplateRenderError(name.to_string(), e.to_string()))
@@ -70,7 +82,10 @@ impl<'a> Renderer<'a> for ProjectRenderer {
     type Template = ProjectTemplate;
     type Output = String; // TODO: temporary, will be replaced by a struct or something
 
-    fn new(template: &'a Self::Template) -> ExecResult<RendererVariant> {
+    fn new(
+        _template: &'a Self::Template,
+        _vars_state: HashMap<String, String>,
+    ) -> ExecResult<RendererVariant> {
         Ok(RendererVariant::Project(Self {}))
     }
 

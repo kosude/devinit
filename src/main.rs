@@ -8,10 +8,10 @@
 use clap::Parser;
 use cli::{Cli, CommandVariant};
 use error::ExecResult;
-use std::{collections::HashMap, convert::TryFrom, process::exit};
-use templater::{FileTemplate, RendererVariant, Template};
+use std::process::exit;
+use templater::{RendererVariant, Template};
 
-use crate::templater::{FileRenderer, Renderer};
+use crate::templater::Renderer;
 
 mod cli;
 mod config;
@@ -32,14 +32,14 @@ fn main() {
                 config::get_global()
                     .templates
                     .get_file_template(&args.com.template)?
-                    .make_renderer()?,
+                    .make_renderer(args.com.var_defines.into_iter().collect())?,
                 args.output,
             ),
             CommandVariant::Project(args) => (
                 config::get_global()
                     .templates
                     .get_project_template(&args.com.template)?
-                    .make_renderer()?,
+                    .make_renderer(args.com.var_defines.into_iter().collect())?,
                 args.output,
             ),
         };
@@ -51,7 +51,7 @@ fn main() {
                     println!("{f}");
                 }
             }
-            RendererVariant::Project(p) => todo!(),
+            RendererVariant::Project(_p) => todo!(),
         }
 
         Ok(())

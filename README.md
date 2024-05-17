@@ -37,6 +37,8 @@ explicitly specified using the `--config` command-line option.
 
 ## Templating
 
+<!-- TODO: update this section with new templating rewrites -->
+
 A templating engine is provided to allow your configurations to use a simple format similar to [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
 The added syntax can be seen below:
 
