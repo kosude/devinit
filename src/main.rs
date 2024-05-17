@@ -5,16 +5,16 @@
  *   See the LICENCE file for more information.
  */
 
-use std::{collections::HashMap, fs, process::exit};
-
-use cfg::Template;
 use clap::Parser;
 use cli::{Cli, CommandVariant};
-use error::{ExecError, ExecResult};
-use templater::Evaluator;
+use error::ExecResult;
+use std::{collections::HashMap, convert::TryFrom, process::exit};
+use templater::{FileTemplate, RendererVariant, Template};
 
-mod cfg;
+use crate::templater::{FileRenderer, Renderer};
+
 mod cli;
+mod config;
 mod dry_run;
 mod error;
 mod logger;
@@ -25,33 +25,33 @@ fn main() {
         let args = Cli::parse();
 
         logger::init_logger(false); // hard-coding verbosity to false for now since there's currently no need for a verbose flag
-        cfg::init_global(args.subcommand.get_common_args().config.as_deref())?;
+        config::init_global(args.subcommand.get_common_args().config.as_deref())?;
 
-        let (pre, state, output) = match args.subcommand {
+        let (renderer, output) = match args.subcommand {
             CommandVariant::File(args) => (
-                cfg::get_global()
+                config::get_global()
                     .templates
                     .get_file_template(&args.com.template)?
-                    .pre(),
-                args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
+                    .make_renderer()?,
                 args.output,
             ),
             CommandVariant::Project(args) => (
-                cfg::get_global()
+                config::get_global()
                     .templates
                     .get_project_template(&args.com.template)?
-                    .pre(),
-                args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
+                    .make_renderer()?,
                 args.output,
             ),
         };
 
-        let out = Evaluator::run(&pre, &state)?;
-        if output.dry_run {
-            println!("{}", &out.eval_literal);
-        } else {
-            fs::write(&output.path.unwrap(), &out.eval_literal)
-                .map_err(|m| ExecError::FileReadWriteError(format!("Failed to write file: {m}")))?;
+        match renderer {
+            RendererVariant::File(f) => {
+                let f = f.render()?;
+                if output.dry_run {
+                    println!("{f}");
+                }
+            }
+            RendererVariant::Project(p) => todo!(),
         }
 
         Ok(())

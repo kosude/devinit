@@ -5,9 +5,8 @@
  *   See the LICENCE file for more information.
  */
 
-use std::process::exit;
-
 use log::error;
+use std::process::exit;
 
 pub type ExecResult<T> = Result<T, ExecError>;
 
@@ -23,6 +22,8 @@ pub enum ExecError {
     TemplateUnknownVariableError(String, String),
     TemplateUnknownFunctionError(String, String),
     TemplateMalformedExpressionError(String),
+    TemplateParseError(String, String),
+    TemplateRenderError(String, String),
 }
 
 impl ExecError {
@@ -58,6 +59,12 @@ impl ExecError {
             Self::TemplateMalformedExpressionError(s) => {
                 error!("Malformed template expression: {s}");
             }
+            Self::TemplateParseError(s1, s2) => {
+                error!("Error when parsing template \"{s1}\": {s2}");
+            }
+            Self::TemplateRenderError(s1, s2) => {
+                error!("Failed to render file template \"{s1}\": {s2}");
+            }
         };
     }
 
@@ -86,6 +93,8 @@ impl From<&ExecError> for i32 {
             ExecError::TemplateUnknownVariableError(_, _) => 8,
             ExecError::TemplateUnknownFunctionError(_, _) => 9,
             ExecError::TemplateMalformedExpressionError(_) => 10,
+            ExecError::TemplateParseError(_, _) => 11,
+            ExecError::TemplateRenderError(_, _) => 12,
         }
     }
 }

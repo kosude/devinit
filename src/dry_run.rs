@@ -7,7 +7,7 @@
 
 use std::fmt;
 
-use crate::cfg::{FileTemplate, ProjectTemplate, Template};
+use crate::templater::{FileTemplate, ProjectTemplate, Template};
 
 const INDENT_PREFIX: &'static str = "    ";
 
@@ -16,10 +16,9 @@ impl fmt::Display for FileTemplate {
         write!(
             f,
             "\"{}\":\n{}{}",
-            self.pre().id,
+            self.name(),
             &INDENT_PREFIX,
-            self.pre()
-                .literal
+            self.literal()
                 .replace("\n", format!("\n{}", INDENT_PREFIX).as_str())
         )
     }

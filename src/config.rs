@@ -7,8 +7,8 @@
 
 use serde::Deserialize;
 
-use super::TemplateSet;
 use crate::error::{ExecError, ExecResult};
+use crate::templater::TemplateSet;
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -23,7 +23,7 @@ pub fn init_global<P: AsRef<Path>>(conf_path: Option<P>) -> ExecResult<()> {
         .map_err(|_| ExecError::NoConfigError())?)
 }
 
-pub fn get_global() -> &'static Config {
+pub fn get_global() -> &'static Config<'static> {
     GLOBAL_CONFIG.get().unwrap()
 }
 
@@ -34,27 +34,13 @@ struct IntermediateParsedConfig<'a> {
     project_templates_loc: &'a str,
 }
 
-impl<'a> IntermediateParsedConfig<'_> {
-    // convert the intermediary config to the final usable configuration struct, most notably reading the templates
-    pub fn evaluate_config<P: AsRef<Path>>(&self, config_path: P) -> ExecResult<Config> {
-        let file_templates_dir = config_path.as_ref().join(self.file_templates_loc);
-        let project_templates_dir = config_path.as_ref().join(self.project_templates_loc);
-
-        Ok(Config {
-            templates: TemplateSet::new()
-                .load_file_templates(&file_templates_dir)?
-                .load_project_templates(&project_templates_dir)?,
-        })
-    }
-}
-
 // This is not the structure expected in the config yaml, but is produced from that.
 #[derive(Debug, Default, Clone)]
-pub struct Config {
-    pub templates: TemplateSet,
+pub struct Config<'a> {
+    pub templates: TemplateSet<'a>,
 }
 
-impl Config {
+impl Config<'_> {
     pub fn load<P: AsRef<Path>>(conf_path: Option<P>) -> ExecResult<Self> {
         // load configuration from global config or conf_path if not None
         // conf_final_path is the actual folder that we found the actual configuration in and which is to be read from
@@ -64,7 +50,11 @@ impl Config {
         let conf_obj = serde_yaml::from_str::<IntermediateParsedConfig>(&conf_str)
             .map_err(|e| ExecError::InvalidConfigError(e.to_string()))?;
 
-        Ok(conf_obj.evaluate_config(conf_final_path)?)
+        Ok(Self {
+            templates: TemplateSet::new()
+                .load_file_templates(conf_final_path.join(conf_obj.file_templates_loc))?
+                .load_project_templates(conf_final_path.join(conf_obj.project_templates_loc))?,
+        })
     }
 
     fn read_conf_str<P: AsRef<Path>>(conf_path: Option<P>) -> ExecResult<(String, PathBuf)> {

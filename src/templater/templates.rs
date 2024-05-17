@@ -5,44 +5,66 @@
  *   See the LICENCE file for more information.
  */
 
-use crate::{
-    error::{ExecError, ExecResult},
-    templater::Preprocessor,
-};
-
+use super::{FileRenderer, ProjectRenderer, Renderer, RendererVariant};
+use crate::error::{ExecError, ExecResult};
 use log::error;
-
 use std::{
     collections::HashSet,
     fmt, fs,
+    marker::PhantomData,
     path::{Path, PathBuf},
 };
 
 /// A generic template trait that encompasses (and is implemented by) both file and project templates.
-pub trait Template: fmt::Display + fmt::Debug + Clone {
-    fn load<P: AsRef<Path>>(path: P) -> ExecResult<impl Template>;
+pub trait Template<'a>: fmt::Display + fmt::Debug + Clone {
+    type Me;
 
-    fn pre(&self) -> &Preprocessor;
+    fn load<P: AsRef<Path>>(path: P) -> ExecResult<Self::Me>;
+
+    fn name(&self) -> &String;
+    fn literal(&self) -> &String;
+
+    fn make_renderer(&'a self) -> ExecResult<RendererVariant>;
 }
 
 /// A template to initialise a single file
 #[derive(Debug, Clone)]
 pub struct FileTemplate {
-    pre: Preprocessor,
+    name: String,
+    literal: String,
 }
 
-impl Template for FileTemplate {
-    /// Load the file template from a single template configuration script
-    fn load<P: AsRef<Path>>(path: P) -> ExecResult<FileTemplate> {
-        let literal =
-            fs::read_to_string(&path).map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
-        let pre = Preprocessor::run(&literal)?;
+impl<'a> Template<'a> for FileTemplate {
+    type Me = Self;
 
-        Ok(Self { pre })
+    /// Load the file template from a single template configuration script
+    fn load<P: AsRef<Path>>(path: P) -> ExecResult<Self::Me> {
+        Ok(Self {
+            name: String::from(
+                path.as_ref()
+                    .file_name()
+                    .ok_or(ExecError::FileReadWriteError(format!(
+                        "Failed to extract filename from path {:?}",
+                        path.as_ref()
+                    )))?
+                    .to_str()
+                    .unwrap(),
+            ),
+            literal: fs::read_to_string(&path)
+                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?,
+        })
     }
 
-    fn pre(&self) -> &Preprocessor {
-        &self.pre
+    fn name(&self) -> &String {
+        &self.name
+    }
+
+    fn literal(&self) -> &String {
+        &self.literal
+    }
+
+    fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
+        Ok(FileRenderer::new(&self)?)
     }
 }
 
@@ -50,47 +72,57 @@ impl Template for FileTemplate {
 #[derive(Debug, Clone)]
 pub struct ProjectTemplate {}
 
-impl Template for ProjectTemplate {
+impl<'a> Template<'a> for ProjectTemplate {
+    type Me = Self;
+
     /// Load the project template from a configuration file in addition to any template configuration scripts
-    fn load<P: AsRef<Path>>(_path: P) -> ExecResult<ProjectTemplate> {
+    fn load<P: AsRef<Path>>(_path: P) -> ExecResult<Self::Me> {
         todo!()
     }
 
-    fn pre(&self) -> &Preprocessor {
+    fn name(&self) -> &String {
         todo!()
+    }
+
+    fn literal(&self) -> &String {
+        todo!()
+    }
+
+    fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
+        Ok(ProjectRenderer::new(&self)?)
     }
 }
 
 /// Templates are stored in hashsets via 'template set entries'.
 /// This way we can index templates by a value inside their structs, specifically their ID
 #[derive(Debug, Clone)]
-struct TemplateSetEntry<T: Template>(T);
+struct TemplateSetEntry<'a, T: Template<'a>>(T, PhantomData<&'a T>);
 
-impl<T: Template> Eq for TemplateSetEntry<T> {}
-impl<T: Template> PartialEq<TemplateSetEntry<T>> for TemplateSetEntry<T> {
-    fn eq(&self, other: &TemplateSetEntry<T>) -> bool {
-        self.0.pre().id == other.0.pre().id
+impl<'a, T: Template<'a>> Eq for TemplateSetEntry<'a, T> {}
+impl<'a, T: Template<'a>> PartialEq<TemplateSetEntry<'a, T>> for TemplateSetEntry<'a, T> {
+    fn eq(&self, other: &TemplateSetEntry<'a, T>) -> bool {
+        self.0.name() == other.0.name()
     }
 }
-impl<T: Template> std::hash::Hash for TemplateSetEntry<T> {
+impl<'a, T: Template<'a>> std::hash::Hash for TemplateSetEntry<'a, T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.pre().id.hash(state);
+        self.0.name().hash(state);
     }
 }
-impl<T: Template> std::borrow::Borrow<str> for TemplateSetEntry<T> {
+impl<'a, T: Template<'a>> std::borrow::Borrow<str> for TemplateSetEntry<'a, T> {
     fn borrow(&self) -> &str {
-        &self.0.pre().id
+        &self.0.name()
     }
 }
 
 /// A structure containing a set of each type of template available to the user.
 #[derive(Debug, Clone, Default)]
-pub struct TemplateSet {
-    file_templates: HashSet<TemplateSetEntry<FileTemplate>>,
-    project_templates: HashSet<TemplateSetEntry<ProjectTemplate>>,
+pub struct TemplateSet<'a> {
+    file_templates: HashSet<TemplateSetEntry<'a, FileTemplate>>,
+    project_templates: HashSet<TemplateSetEntry<'a, ProjectTemplate>>,
 }
 
-impl TemplateSet {
+impl<'a> TemplateSet<'a> {
     pub fn new() -> Self {
         Self {
             file_templates: HashSet::new(),
@@ -144,17 +176,21 @@ impl TemplateSet {
 
     /// Load each template in the list of file paths given in `paths`, each one referring to a template configuration script.
     /// The function to load a template is given via the `load_func` parameter.
-    fn load_templates_from_path_list<P: AsRef<Path>, T: Template, F: Fn(&P) -> ExecResult<T>>(
-        set: &mut HashSet<TemplateSetEntry<T>>,
+    fn load_templates_from_path_list<
+        P: AsRef<Path>,
+        T: Template<'a>,
+        F: Fn(&P) -> ExecResult<T>,
+    >(
+        set: &mut HashSet<TemplateSetEntry<'a, T>>,
         paths: Vec<P>,
         load_func: F,
     ) -> ExecResult<()> {
         Ok(for p in paths.iter() {
-            let t = TemplateSetEntry(load_func(p)?);
+            let t = TemplateSetEntry(load_func(p)?, PhantomData);
 
             // check against collisions, warn the user if there are multiple templates with the same name/id
             if set.contains(&t) {
-                error!("Found duplicated template id: \"{}\"", t.0.pre().id);
+                error!("Found duplicated template id: \"{}\"", t.0.name());
                 continue;
             }
             set.insert(t);

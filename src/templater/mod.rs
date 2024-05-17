@@ -5,14 +5,8 @@
  *   See the LICENCE file for more information.
  */
 
-mod evaluator;
-pub use evaluator::*;
+mod renderer;
+pub use renderer::*;
 
-mod functions;
-pub use functions::*;
-
-mod parser;
-pub use parser::*;
-
-mod preprocessor;
-pub use preprocessor::*;
+mod templates;
+pub use templates::*;
