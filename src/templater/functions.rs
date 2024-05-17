@@ -39,7 +39,7 @@ macro_rules! funcmap {
 
 /// Load a HashMap containing all available template functions
 pub fn load_function_map() -> HashMap<&'static str, Box<TemplateFn>> {
-    funcmap!(licence)
+    funcmap!(licence, wrap)
 }
 
 /// Expand the specified licence by its SPDX code to it full form.
@@ -74,4 +74,17 @@ fn licence(params: Vec<&String>) -> String {
     }
 
     text
+}
+
+/// Wrap a given string onto multiple lines of specified max length.
+fn wrap(params: Vec<&String>) -> String {
+    let str = params[0];
+    let max_len = params[1];
+
+    let res = textwrap::wrap(
+        str,
+        textwrap::Options::new(max_len.parse::<usize>().unwrap()),
+    );
+
+    res.join("\n")
 }

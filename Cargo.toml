@@ -14,3 +14,4 @@ log = "0.4.21"
 regex = "1.10.4"
 serde = { version = "1.0.201", features = ["derive"] }
 serde_yaml = "0.9.34"
+textwrap = "0.16.1"
