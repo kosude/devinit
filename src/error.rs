@@ -16,8 +16,8 @@ pub enum ExecError {
     NoConfigError(),
     InvalidConfigError(String),
     IdNotFoundError(String),
-    TemplateParseError(String, String),
-    TemplateRenderError(String, String),
+    TemplateParseError(String),
+    TemplateRenderError(String),
 }
 
 impl ExecError {
@@ -35,11 +35,11 @@ impl ExecError {
             Self::IdNotFoundError(s) => {
                 error!("No template was found with id {s}");
             }
-            Self::TemplateParseError(s1, s2) => {
-                error!("Error when parsing template \"{s1}\": {s2}");
+            Self::TemplateParseError(s) => {
+                error!("Error when parsing template, more information below:\n{s}");
             }
-            Self::TemplateRenderError(s1, s2) => {
-                error!("Failed to render file template \"{s1}\": {s2}");
+            Self::TemplateRenderError(s) => {
+                error!("Error when rendering template, more information below:\n{s}");
             }
         };
     }
@@ -63,8 +63,8 @@ impl From<&ExecError> for i32 {
             ExecError::NoConfigError() => 2,
             ExecError::InvalidConfigError(_) => 3,
             ExecError::IdNotFoundError(_) => 4,
-            ExecError::TemplateParseError(_, _) => 5,
-            ExecError::TemplateRenderError(_, _) => 6,
+            ExecError::TemplateParseError(_) => 5,
+            ExecError::TemplateRenderError(_) => 6,
         }
     }
 }

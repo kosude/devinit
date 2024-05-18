@@ -9,6 +9,7 @@ use std::collections::HashMap;
 
 use super::{FileTemplate, ProjectTemplate, Template};
 use crate::error::{ExecError, ExecResult};
+use miette::IntoDiagnostic;
 use tera::{Context, Tera};
 
 pub enum RendererVariant<'a> {
@@ -48,9 +49,9 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
         let literal = &template.literal();
 
         let mut tera = Tera::default();
-        // TODO: more descriptive parsing error messages
         tera.add_raw_template(&name, &literal)
-            .map_err(|e| ExecError::TemplateParseError(name.to_string(), e.to_string()))?;
+            .into_diagnostic()
+            .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
 
         // build context from given parameters
         let mut context = Context::new();
@@ -68,10 +69,10 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
     /// Render the file, producing evaluated string output
     fn render(&self) -> ExecResult<Self::Output> {
         let name = &self.template.name();
-        // TODO: more descriptive render errors than just 'render error'
         self.tera
             .render(&name, &self.context)
-            .map_err(|e| ExecError::TemplateRenderError(name.to_string(), e.to_string()))
+            .into_diagnostic()
+            .map_err(|e| ExecError::TemplateRenderError(format!("{:?}", e)))
     }
 }
 
