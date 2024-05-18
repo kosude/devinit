@@ -10,19 +10,12 @@ use std::process::exit;
 
 pub type ExecResult<T> = Result<T, ExecError>;
 
-// TODO: chore: check each error and remove unused ones
 #[derive(Debug)]
 pub enum ExecError {
     FileReadWriteError(String),
     NoConfigError(),
     InvalidConfigError(String),
     IdNotFoundError(String),
-    TemplateSyntaxError(String),
-    TemplateInvalidTokenError(String, String),
-    TemplateIncorrectArgsError(String),
-    TemplateUnknownVariableError(String, String),
-    TemplateUnknownFunctionError(String, String),
-    TemplateMalformedExpressionError(String),
     TemplateParseError(String, String),
     TemplateRenderError(String, String),
 }
@@ -41,24 +34,6 @@ impl ExecError {
             }
             Self::IdNotFoundError(s) => {
                 error!("No template was found with id {s}");
-            }
-            Self::TemplateSyntaxError(s) => {
-                error!("Error when parsing template: syntax error: {s}");
-            }
-            Self::TemplateInvalidTokenError(s1, s2) => {
-                error!("Error when parsing template \"{s2}\": invalid token: {s1}");
-            }
-            Self::TemplateIncorrectArgsError(s) => {
-                error!("Error when parsing template: incorrect number of args: {s}");
-            }
-            Self::TemplateUnknownVariableError(s1, s2) => {
-                error!("Unknown variable {s1} in template \"{s2}\"");
-            }
-            Self::TemplateUnknownFunctionError(s1, s2) => {
-                error!("Unknown function {s1} in template \"{s2}\"");
-            }
-            Self::TemplateMalformedExpressionError(s) => {
-                error!("Malformed template expression: {s}");
             }
             Self::TemplateParseError(s1, s2) => {
                 error!("Error when parsing template \"{s1}\": {s2}");
@@ -88,14 +63,8 @@ impl From<&ExecError> for i32 {
             ExecError::NoConfigError() => 2,
             ExecError::InvalidConfigError(_) => 3,
             ExecError::IdNotFoundError(_) => 4,
-            ExecError::TemplateSyntaxError(_) => 5,
-            ExecError::TemplateInvalidTokenError(_, _) => 6,
-            ExecError::TemplateIncorrectArgsError(_) => 7,
-            ExecError::TemplateUnknownVariableError(_, _) => 8,
-            ExecError::TemplateUnknownFunctionError(_, _) => 9,
-            ExecError::TemplateMalformedExpressionError(_) => 10,
-            ExecError::TemplateParseError(_, _) => 11,
-            ExecError::TemplateRenderError(_, _) => 12,
+            ExecError::TemplateParseError(_, _) => 5,
+            ExecError::TemplateRenderError(_, _) => 6,
         }
     }
 }
