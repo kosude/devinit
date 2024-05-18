@@ -5,6 +5,9 @@
  *   See the LICENCE file for more information.
  */
 
+mod functions;
+pub use functions::*;
+
 mod renderer;
 pub use renderer::*;
 
