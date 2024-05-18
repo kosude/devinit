@@ -1,0 +1,11 @@
+{% set name = "Jack Bennett" -%}
+{% set year = "2024" -%}
+
+{% set mit = licence(id = "MIT") -%}
+{% set gpl = licence(id = "GPL-2.0-only") -%}
+
+{{ mit.text
+    | replace(from = "<year>",              to = year)
+    | replace(from = "<copyright holders>", to = name)
+    | wrap(len=80)
+}}

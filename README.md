@@ -11,7 +11,7 @@ make boilerplate less annoying.
 ```bash
 # Configure a file at path 'licence.txt' with the 'LicenceBlock' template,
 # specifying values for the variables 'name' and 'year'.
-$ devinit file licence.txt "LicenceBlock" -Dname="John Doe" -Dyear="2024"
+$ devinit file -p licence.txt "LicenceBlock" -Dname="John Doe" -Dyear="2024"
 
 # Process the template 'EditorConfig' and output the result to stdout.
 $ devinit file --dry-run "EditorConfig"
@@ -37,55 +37,58 @@ explicitly specified using the `--config` command-line option.
 
 ## Templating
 
-<!-- TODO: update this section with new templating rewrites -->
-
-A templating engine is provided to allow your configurations to use a simple format similar to [Jinja](https://jinja.palletsprojects.com/en/3.1.x/).
-The added syntax can be seen below:
-
-| Syntax      | Use case                         |
-|-------------|----------------------------------|
-| `{: ... :}` | Preprocessed directives          |
-| `{{ ... }}` | Dynamic expressions              |
-| `{# ... #}` | Comments                         |
-
-In expressions, each token is interpreted as a string, and are space-separated - to include spaces in a single token, enclose it in double or single
-quotation marks.
+A templating engine is provided to allow your configurations to use a simple format similar to [Jinja](https://jinja.palletsprojects.com/en/3.1.x/),
+courtesy of the [Tera](https://keats.github.io/tera/) project - see their documentation for an overview of the syntax.
 
 
-### Variables
+### Functions and filters
 
-Variables are read with dollar signs `$`. This can be done in expressions, either stand-alone or as part of a function parameter list:
-```
-foo            = {{ $foo }}
-func(foo, bar) = {{ func $foo $bar }}
-```
+In addition to a multitude of built-in functions/filters provided by Tera (see docs [here](https://keats.github.io/tera/docs/#built-ins)), some extras
+are also provided by Devinit, and are documented below.
 
+---
 
-### Functions
+#### FUNCTION `licence(id: String)`
 
-Functions, as briefly mentioned before, are available in Devinit templates. This interface is **not** currently extensible - any additional functions
-should be submitted to this repo as PRs *(an improved + extensible system could be developed in a future release, if I work on this project for
-that long)*.
+Expand a software licence, where `id` is a valid [SPDX id](https://spdx.org/licenses/).
 
-Some **built-in** functions are provided, and are documented below.
-
-
-#### `licence <id> <element> [params]`
-
-Expand a software licence, where `id` is a valid [SPDX id](https://spdx.org/licenses/). `params` is a variable list of parameters in `foo=bar` format,
-where each key is replaced with its value in the licence text (for example, `year=2024` replaces instances of "\<year\>" in a licence body with
-"2024").
-
-`element` describes which part of the licence should be output, and is one of the following:
+This function returns an object containing each component of the licence. The returned object is split up into the following elements (accessible by
+dot or square bracket notation):
  - `name` - the licence name
- - `header` - the standard licence header, if available
+ - `header` - the standard licence header\*
  - `text` - the complete licence body
+
+A lot of licences have places to substitute values, like year and copyright holder - it's recommended to use the provided
+[replace](https://keats.github.io/tera/docs/#replace) filter to handle these template-side.
+
+*\*Not all licences support the header component (the MIT licence, for example), and attempting to access it on them will result in an error. In these
+cases, use the guaranteed `text` field instead.*
+
+```jinja
+{% set gpl = licence(id = "GPL-2.0-only") -%}
+
+{{ gpl.name }}
+{{ gpl.header }}
+{{ gpl.text }} {# A very long string #}
+```
+
+---
+
+#### FILTER `wrap(len: i32)`
+
+Break up the given string into lines of maximum length `len`, without breaking individual words.
+
+```jinja
+{{ gpl.text | wrap(len = 80) }}
+```
+
+---
 
 
 ## Planned features
 
  - VS Code integration (extension)
  - Project templates
- - Function parameter validation (i.e. check no. of parameters passed to template funcs)
- - Line breaking - function to split a multi-line string down into max-length lines
+ - List of installed templates
  - Comment blocks - function to take a multi-line string and append a prefix (e.g. `//` before each line)
+   - Standard options for comment blocks, e.g. 'hashtag', 'slash', 'c89', etc.
