@@ -15,3 +15,4 @@ miette = { version = "7.2.0", features = ["fancy"] }
 serde = { version = "1.0.201", features = ["derive"] }
 serde_yaml = "0.9.34"
 tera = "1.19.1"
+textwrap = "0.16.1"

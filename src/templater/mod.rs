@@ -5,8 +5,9 @@
  *   See the LICENCE file for more information.
  */
 
-mod functions;
-pub use functions::*;
+#[macro_use]
+pub mod fn_utils;
+pub mod fn_decls;
 
 mod renderer;
 pub use renderer::*;

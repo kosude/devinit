@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use super::{licence, FileTemplate, ProjectTemplate, Template};
+use super::{fn_decls, FileTemplate, ProjectTemplate, Template};
 use crate::error::{ExecError, ExecResult};
 use miette::IntoDiagnostic;
 use tera::{Context, Tera};
@@ -48,7 +48,8 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
             .into_diagnostic()
             .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
 
-        tera.register_function("licence", licence());
+        tera.register_function("licence", fn_decls::licence());
+        tera.register_filter("wrap", fn_decls::wrap());
 
         Ok(RendererVariant::File(Self {
             tera,
