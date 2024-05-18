@@ -4,16 +4,12 @@ description = "Quickly initialise files and folders with preconfigured boilerpla
 
 edition = "2018"
 
-# TODO: we can definitely remove some of these dependencies, so do that ASAP
 [dependencies]
 clap = { version = "4.4.18", features = ["derive"] }
 colored = "2.1.0"
 dirs = "5.0.1"
 lazy_static = "1.4.0"
-license = "3.3.1"
 log = "0.4.21"
-regex = "1.10.4"
 serde = { version = "1.0.201", features = ["derive"] }
 serde_yaml = "0.9.34"
 tera = "1.19.1"
-textwrap = "0.16.1"
