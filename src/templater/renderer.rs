@@ -5,8 +5,6 @@
  *   See the LICENCE file for more information.
  */
 
-use std::collections::HashMap;
-
 use super::{FileTemplate, ProjectTemplate, Template};
 use crate::error::{ExecError, ExecResult};
 use miette::IntoDiagnostic;
@@ -22,10 +20,10 @@ pub trait Renderer<'a> {
     type Template;
     type Output;
 
-    fn new(
-        template: &'a Self::Template,
-        vars_state: HashMap<String, String>,
-    ) -> ExecResult<RendererVariant>;
+    fn new(template: &'a Self::Template) -> ExecResult<RendererVariant>;
+
+    fn add_variable<S: AsRef<str>>(&mut self, key: S, val: S);
+
     fn render(&self) -> ExecResult<Self::Output>;
 }
 
@@ -41,10 +39,7 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
     type Output = String;
 
     /// Initialise a new renderer for the given file template
-    fn new(
-        template: &'a Self::Template,
-        vars_state: HashMap<String, String>,
-    ) -> ExecResult<RendererVariant> {
+    fn new(template: &'a Self::Template) -> ExecResult<RendererVariant> {
         let name = &template.name();
         let literal = &template.literal();
 
@@ -53,17 +48,15 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
             .into_diagnostic()
             .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
 
-        // build context from given parameters
-        let mut context = Context::new();
-        for (k, v) in &vars_state {
-            context.insert(k, &v);
-        }
-
         Ok(RendererVariant::File(Self {
             tera,
             template,
-            context,
+            context: Context::new(),
         }))
+    }
+
+    fn add_variable<S: AsRef<str>>(&mut self, key: S, val: S) {
+        self.context.insert(key.as_ref(), val.as_ref());
     }
 
     /// Render the file, producing evaluated string output
@@ -83,11 +76,12 @@ impl<'a> Renderer<'a> for ProjectRenderer {
     type Template = ProjectTemplate;
     type Output = String; // TODO: temporary, will be replaced by a struct or something
 
-    fn new(
-        _template: &'a Self::Template,
-        _vars_state: HashMap<String, String>,
-    ) -> ExecResult<RendererVariant> {
+    fn new(_template: &'a Self::Template) -> ExecResult<RendererVariant> {
         Ok(RendererVariant::Project(Self {}))
+    }
+
+    fn add_variable<S: AsRef<str>>(&mut self, _key: S, _val: S) {
+        todo!()
     }
 
     fn render(&self) -> ExecResult<Self::Output> {

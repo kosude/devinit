@@ -9,7 +9,7 @@ use super::{FileRenderer, ProjectRenderer, Renderer, RendererVariant};
 use crate::error::{ExecError, ExecResult};
 use log::error;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::HashSet,
     fmt, fs,
     marker::PhantomData,
     path::{Path, PathBuf},
@@ -24,7 +24,7 @@ pub trait Template<'a>: fmt::Display + fmt::Debug + Clone {
     fn name(&self) -> &String;
     fn literal(&self) -> &String;
 
-    fn make_renderer(&'a self, vars_state: HashMap<String, String>) -> ExecResult<RendererVariant>;
+    fn make_renderer(&'a self) -> ExecResult<RendererVariant>;
 }
 
 /// A template to initialise a single file
@@ -63,8 +63,8 @@ impl<'a> Template<'a> for FileTemplate {
         &self.literal
     }
 
-    fn make_renderer(&'a self, vars_state: HashMap<String, String>) -> ExecResult<RendererVariant> {
-        Ok(FileRenderer::new(&self, vars_state)?)
+    fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
+        Ok(FileRenderer::new(&self)?)
     }
 }
 
@@ -88,8 +88,8 @@ impl<'a> Template<'a> for ProjectTemplate {
         todo!()
     }
 
-    fn make_renderer(&'a self, vars_state: HashMap<String, String>) -> ExecResult<RendererVariant> {
-        Ok(ProjectRenderer::new(&self, vars_state)?)
+    fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
+        Ok(ProjectRenderer::new(&self)?)
     }
 }
 
