@@ -24,16 +24,16 @@ impl ExecError {
     fn base_handle_fn(&self) {
         match &self {
             Self::FileReadWriteError(s) => {
-                error!("File read/write error: {s}");
+                error!("File read/write error: {s}\n");
             }
             Self::NoConfigError() => {
-                error!("No configuration file found (is your devinit installation valid?)");
+                error!("No configuration file found (is your devinit installation valid?)\n");
             }
             Self::InvalidConfigError(s) => {
-                error!("Invalid or malformed config syntax: {s}");
+                error!("Invalid or malformed config syntax: {s}\n");
             }
             Self::IdNotFoundError(s) => {
-                error!("No template was found with id {s}");
+                error!("No template was found with id {s}\n");
             }
             Self::TemplateParseError(s) => {
                 error!("Error when parsing template, more information below:\n{s}");

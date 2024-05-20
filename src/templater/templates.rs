@@ -190,7 +190,7 @@ impl<'a> TemplateSet<'a> {
 
             // check against collisions, warn the user if there are multiple templates with the same name/id
             if set.contains(&t) {
-                error!("Found duplicated template id: \"{}\"", t.0.name());
+                error!("Found duplicate template id: \"{}\"\n", t.0.name());
                 continue;
             }
             set.insert(t);

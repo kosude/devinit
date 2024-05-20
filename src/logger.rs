@@ -32,7 +32,7 @@ impl log::Log for Logger {
         if self.enabled(record.metadata()) {
             match record.level() {
                 Level::Error => {
-                    eprintln!(
+                    eprint!(
                         "{} {} {}",
                         "devinit:".bold(),
                         "error:".red().bold(),
@@ -40,7 +40,7 @@ impl log::Log for Logger {
                     );
                 }
                 Level::Warn => {
-                    println!(
+                    print!(
                         "{} {} {}",
                         "devinit:".bold(),
                         "warn:".yellow().bold(),
@@ -48,7 +48,7 @@ impl log::Log for Logger {
                     );
                 }
                 _ => {
-                    println!("{} {}", "devinit:".bold(), record.args());
+                    print!("{} {}", "devinit:".bold(), record.args());
                 }
             }
         }
