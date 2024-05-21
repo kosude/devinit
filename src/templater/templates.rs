@@ -245,8 +245,4 @@ impl<'a> TemplateSet<'a> {
             .ok_or(ExecError::IdNotFoundError(format!("\"{}\" (PROJECT)", id)))?
             .0)
     }
-
-    pub fn context(&self) -> &ContextArcMutex {
-        &self.ctx
-    }
 }
