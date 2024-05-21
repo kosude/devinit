@@ -5,10 +5,10 @@
  *   See the LICENCE file for more information.
  */
 
-use super::{fn_decls, FileTemplate, ProjectTemplate, Template};
+use super::{ContextArcMutex, FileTemplate, ProjectTemplate, Template};
 use crate::error::{ExecError, ExecResult};
 use miette::IntoDiagnostic;
-use tera::{Context, Tera};
+use tera::Context;
 
 pub enum RendererVariant<'a> {
     File(FileRenderer<'a>),
@@ -29,9 +29,10 @@ pub trait Renderer<'a> {
 
 /// A renderer for file templates
 pub struct FileRenderer<'a> {
-    tera: Tera,
+    ctx_ref: ContextArcMutex,
+
     template: &'a FileTemplate,
-    context: Context,
+    var_context: tera::Context,
 }
 
 impl<'a> Renderer<'a> for FileRenderer<'a> {
@@ -40,33 +41,25 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
 
     /// Initialise a new renderer for the given file template
     fn new(template: &'a Self::Template) -> ExecResult<RendererVariant> {
-        let name = &template.name();
-        let literal = &template.literal();
-
-        let mut tera = Tera::default();
-        tera.add_raw_template(&name, &literal)
-            .into_diagnostic()
-            .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
-
-        tera.register_function("licence", fn_decls::licence());
-        tera.register_filter("wrap", fn_decls::wrap());
-
         Ok(RendererVariant::File(Self {
-            tera,
+            ctx_ref: template.context(),
             template,
-            context: Context::new(),
+            var_context: Context::new(),
         }))
     }
 
     fn add_variable<S: AsRef<str>>(&mut self, key: S, val: S) {
-        self.context.insert(key.as_ref(), val.as_ref());
+        self.var_context.insert(key.as_ref(), val.as_ref());
     }
 
     /// Render the file, producing evaluated string output
     fn render(&self) -> ExecResult<Self::Output> {
         let name = &self.template.name();
-        self.tera
-            .render(&name, &self.context)
+        self.ctx_ref
+            .lock()
+            .unwrap()
+            .tera()
+            .render(&name, &self.var_context)
             .into_diagnostic()
             .map_err(|e| ExecError::TemplateRenderError(format!("{:?}", e)))
     }
@@ -80,7 +73,7 @@ impl<'a> Renderer<'a> for ProjectRenderer {
     type Output = String; // TODO: temporary, will be replaced by a struct or something
 
     fn new(_template: &'a Self::Template) -> ExecResult<RendererVariant> {
-        Ok(RendererVariant::Project(Self {}))
+        todo!()
     }
 
     fn add_variable<S: AsRef<str>>(&mut self, _key: S, _val: S) {

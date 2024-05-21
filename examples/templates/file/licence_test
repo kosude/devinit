@@ -4,8 +4,12 @@
 {% set mit = licence(id = "MIT") -%}
 {% set gpl = licence(id = "GPL-2.0-only") -%}
 
-{{ mit.text
-    | replace(from = "<year>",              to = year)
-    | replace(from = "<copyright holders>", to = name)
-    | wrap(len=80)
-}}
+{#
+    {{ mit.text
+        | replace(from = "<year>",              to = year)
+        | replace(from = "<copyright holders>", to = name)
+        | wrap(len=80)
+    }}
+-#}
+
+This project is licenced under the {{ gpl.name }}.

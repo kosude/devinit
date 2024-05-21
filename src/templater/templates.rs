@@ -5,31 +5,36 @@
  *   See the LICENCE file for more information.
  */
 
-use super::{FileRenderer, ProjectRenderer, Renderer, RendererVariant};
+use super::{Context, ContextArcMutex, FileRenderer, ProjectRenderer, Renderer, RendererVariant};
 use crate::error::{ExecError, ExecResult};
 use log::error;
+use miette::IntoDiagnostic;
 use std::{
     collections::HashSet,
     fmt, fs,
     marker::PhantomData,
     path::{Path, PathBuf},
+    sync::{Arc, Mutex},
 };
 
 /// A generic template trait that encompasses (and is implemented by) both file and project templates.
 pub trait Template<'a>: fmt::Display + fmt::Debug + Clone {
     type Me;
 
-    fn load<P: AsRef<Path>>(path: P) -> ExecResult<Self::Me>;
+    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me>;
 
     fn name(&self) -> &String;
     fn literal(&self) -> &String;
 
+    fn context(&self) -> ContextArcMutex;
     fn make_renderer(&'a self) -> ExecResult<RendererVariant>;
 }
 
 /// A template to initialise a single file
 #[derive(Debug, Clone)]
 pub struct FileTemplate {
+    ctx_ref: ContextArcMutex,
+
     name: String,
     literal: String,
 }
@@ -38,20 +43,31 @@ impl<'a> Template<'a> for FileTemplate {
     type Me = Self;
 
     /// Load the file template from a single template configuration script
-    fn load<P: AsRef<Path>>(path: P) -> ExecResult<Self::Me> {
+    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me> {
+        let name = String::from(
+            path.as_ref()
+                .file_name()
+                .ok_or(ExecError::FileReadWriteError(format!(
+                    "Failed to extract filename from path {:?}",
+                    path.as_ref()
+                )))?
+                .to_str()
+                .unwrap(),
+        );
+        let literal =
+            fs::read_to_string(&path).map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+
+        let mut ctx_lock = ctx.lock().unwrap();
+        ctx_lock
+            .tera_mut()
+            .add_raw_template(&name, &literal)
+            .into_diagnostic()
+            .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
+
         Ok(Self {
-            name: String::from(
-                path.as_ref()
-                    .file_name()
-                    .ok_or(ExecError::FileReadWriteError(format!(
-                        "Failed to extract filename from path {:?}",
-                        path.as_ref()
-                    )))?
-                    .to_str()
-                    .unwrap(),
-            ),
-            literal: fs::read_to_string(&path)
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?,
+            ctx_ref: ctx.clone(),
+            name,
+            literal,
         })
     }
 
@@ -63,6 +79,10 @@ impl<'a> Template<'a> for FileTemplate {
         &self.literal
     }
 
+    fn context(&self) -> ContextArcMutex {
+        self.ctx_ref.clone()
+    }
+
     fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
         Ok(FileRenderer::new(&self)?)
     }
@@ -70,13 +90,15 @@ impl<'a> Template<'a> for FileTemplate {
 
 /// A template to initialise a project (i.e. a directory of files)
 #[derive(Debug, Clone)]
-pub struct ProjectTemplate {}
+pub struct ProjectTemplate {
+    ctx_ref: ContextArcMutex,
+}
 
 impl<'a> Template<'a> for ProjectTemplate {
     type Me = Self;
 
     /// Load the project template from a configuration file in addition to any template configuration scripts
-    fn load<P: AsRef<Path>>(_path: P) -> ExecResult<Self::Me> {
+    fn load<P: AsRef<Path>>(_path: P, _ctx: ContextArcMutex) -> ExecResult<Self::Me> {
         todo!()
     }
 
@@ -86,6 +108,10 @@ impl<'a> Template<'a> for ProjectTemplate {
 
     fn literal(&self) -> &String {
         todo!()
+    }
+
+    fn context(&self) -> ContextArcMutex {
+        self.ctx_ref.clone()
     }
 
     fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
@@ -118,6 +144,8 @@ impl<'a, T: Template<'a>> std::borrow::Borrow<str> for TemplateSetEntry<'a, T> {
 /// A structure containing a set of each type of template available to the user.
 #[derive(Debug, Clone, Default)]
 pub struct TemplateSet<'a> {
+    ctx: ContextArcMutex,
+
     file_templates: HashSet<TemplateSetEntry<'a, FileTemplate>>,
     project_templates: HashSet<TemplateSetEntry<'a, ProjectTemplate>>,
 }
@@ -125,6 +153,7 @@ pub struct TemplateSet<'a> {
 impl<'a> TemplateSet<'a> {
     pub fn new() -> Self {
         Self {
+            ctx: Arc::new(Mutex::new(Context::new())),
             file_templates: HashSet::new(),
             project_templates: HashSet::new(),
         }
@@ -132,8 +161,9 @@ impl<'a> TemplateSet<'a> {
 
     pub fn load_file_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
         let paths = Self::read_templates_dir(dir)?;
+        let ctx = &self.ctx;
         Self::load_templates_from_path_list(&mut self.file_templates, paths, |p| {
-            FileTemplate::load(p)
+            FileTemplate::load(p, ctx.clone())
         })?;
 
         Ok(self)
@@ -141,8 +171,9 @@ impl<'a> TemplateSet<'a> {
 
     pub fn load_project_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
         let paths = Self::read_templates_dir(dir)?;
+        let ctx = &self.ctx;
         Self::load_templates_from_path_list(&mut self.project_templates, paths, |p| {
-            ProjectTemplate::load(p)
+            ProjectTemplate::load(p, ctx.clone())
         })?;
 
         Ok(self)
@@ -213,5 +244,9 @@ impl<'a> TemplateSet<'a> {
             .get(id)
             .ok_or(ExecError::IdNotFoundError(format!("\"{}\" (PROJECT)", id)))?
             .0)
+    }
+
+    pub fn context(&self) -> &ContextArcMutex {
+        &self.ctx
     }
 }

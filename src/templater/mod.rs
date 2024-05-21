@@ -5,6 +5,9 @@
  *   See the LICENCE file for more information.
  */
 
+mod context;
+pub use context::*;
+
 #[macro_use]
 pub mod fn_utils;
 pub mod fn_decls;
