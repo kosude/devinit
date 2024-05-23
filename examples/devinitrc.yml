@@ -1,2 +1,2 @@
-file_templates_loc: "templates/file/"
-project_templates_loc: "templates/project/"
+file_templates_loc: templates/file/
+project_templates_loc: templates/project/

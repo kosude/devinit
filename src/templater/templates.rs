@@ -10,7 +10,7 @@ use crate::error::{ExecError, ExecResult};
 use log::error;
 use miette::IntoDiagnostic;
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fmt, fs,
     marker::PhantomData,
     path::{Path, PathBuf},
@@ -92,14 +92,29 @@ impl<'a> Template<'a> for FileTemplate {
 #[derive(Debug, Clone)]
 pub struct ProjectTemplate {
     ctx_ref: ContextArcMutex,
+
+    /// Hashmap of literals.
+    /// Key is the relative filename + folder structure to emit (e.g. foo/bar/baz.txt)
+    /// Value is the templated file literal
+    literals: HashMap<String, String>,
 }
 
 impl<'a> Template<'a> for ProjectTemplate {
     type Me = Self;
 
     /// Load the project template from a configuration file in addition to any template configuration scripts
-    fn load<P: AsRef<Path>>(_path: P, _ctx: ContextArcMutex) -> ExecResult<Self::Me> {
-        todo!()
+    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me> {
+        let proj_dir = path
+            .as_ref()
+            .parent()
+            .ok_or(ExecError::MissingProjectDirError(
+                path.as_ref().display().to_string(),
+            ))?;
+
+        Ok(Self {
+            ctx_ref: ctx.clone(),
+            literals: todo!(), // TODO: read the `files` entry in the templaterc.yml file
+        })
     }
 
     fn name(&self) -> &String {
@@ -160,7 +175,7 @@ impl<'a> TemplateSet<'a> {
     }
 
     pub fn load_file_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
-        let paths = Self::read_templates_dir(dir)?;
+        let paths = Self::read_templates_dir(dir, false)?;
         let ctx = &self.ctx;
         Self::load_templates_from_path_list(&mut self.file_templates, paths, |p| {
             FileTemplate::load(p, ctx.clone())
@@ -170,7 +185,7 @@ impl<'a> TemplateSet<'a> {
     }
 
     pub fn load_project_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
-        let paths = Self::read_templates_dir(dir)?;
+        let paths = Self::read_templates_dir(dir, true)?;
         let ctx = &self.ctx;
         Self::load_templates_from_path_list(&mut self.project_templates, paths, |p| {
             ProjectTemplate::load(p, ctx.clone())
@@ -180,7 +195,7 @@ impl<'a> TemplateSet<'a> {
     }
 
     /// Recursively read through a directory for template config scripts
-    fn read_templates_dir<P: AsRef<Path>>(path: P) -> ExecResult<Vec<PathBuf>> {
+    fn read_templates_dir<P: AsRef<Path>>(path: P, projects: bool) -> ExecResult<Vec<PathBuf>> {
         let mut buf = vec![];
         let Ok(entries) = fs::read_dir(path) else {
             return Ok(buf);
@@ -194,11 +209,13 @@ impl<'a> TemplateSet<'a> {
                 .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
 
             if meta.is_dir() {
-                let mut subdir = Self::read_templates_dir(entry.path())?;
+                let mut subdir = Self::read_templates_dir(entry.path(), projects)?;
                 buf.append(&mut subdir);
             }
             if meta.is_file() {
-                buf.push(entry.path());
+                if !projects || (entry.file_name() == "templaterc.yml") {
+                    buf.push(entry.path());
+                }
             }
         }
 

@@ -18,6 +18,7 @@ pub enum ExecError {
     IdNotFoundError(String),
     TemplateParseError(String),
     TemplateRenderError(String),
+    MissingProjectDirError(String),
 }
 
 impl ExecError {
@@ -40,6 +41,9 @@ impl ExecError {
             }
             Self::TemplateRenderError(s) => {
                 error!("Error when rendering template, more information below:\n{s}");
+            }
+            Self::MissingProjectDirError(s) => {
+                error!("Failed to get parent of project config file at {s}\n");
             }
         };
     }
@@ -65,6 +69,7 @@ impl From<&ExecError> for i32 {
             ExecError::IdNotFoundError(_) => 4,
             ExecError::TemplateParseError(_) => 5,
             ExecError::TemplateRenderError(_) => 6,
+            ExecError::MissingProjectDirError(_) => 7,
         }
     }
 }
