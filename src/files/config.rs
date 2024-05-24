@@ -12,12 +12,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Deserialized values as specified in the config YAML file.
 #[derive(Deserialize, Debug, Default, Clone)]
 pub struct ConfigYaml {
     pub file_templates_loc: String,
     pub project_templates_loc: String,
 }
 
+/// An intermediary builder struct for config deserialization.
 #[derive(Debug, Default, Clone)]
 pub struct ConfigYamlBuilder {
     path: PathBuf,
@@ -45,7 +47,7 @@ impl ConfigYamlBuilder {
             .map_err(|e| ExecError::InvalidConfigError(e.to_string()))
     }
 
-    /// Return the path of the folder containing config that is being read.
+    /// Return the path of the folder containing the config that is being read.
     pub fn folder(&self) -> &PathBuf {
         &self.path_parent
     }

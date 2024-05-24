@@ -19,6 +19,7 @@ pub enum ExecError {
     TemplateParseError(String),
     TemplateRenderError(String),
     MissingProjectDirError(String),
+    InvalidProjectConfigError(String),
 }
 
 impl ExecError {
@@ -45,6 +46,9 @@ impl ExecError {
             Self::MissingProjectDirError(s) => {
                 error!("Failed to get parent of project config file at {s}\n");
             }
+            Self::InvalidProjectConfigError(s) => {
+                error!("Invalid or malformed project template config syntax: {s}\n");
+            }
         };
     }
 
@@ -70,6 +74,7 @@ impl From<&ExecError> for i32 {
             ExecError::TemplateParseError(_) => 5,
             ExecError::TemplateRenderError(_) => 6,
             ExecError::MissingProjectDirError(_) => 7,
+            ExecError::InvalidProjectConfigError(_) => 8,
         }
     }
 }

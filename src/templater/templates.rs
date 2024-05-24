@@ -6,7 +6,10 @@
  */
 
 use super::{Context, ContextArcMutex, FileRenderer, ProjectRenderer, Renderer, RendererVariant};
-use crate::error::{ExecError, ExecResult};
+use crate::{
+    error::{ExecError, ExecResult},
+    files::ProjectTemplateYamlBuilder,
+};
 use log::error;
 use miette::IntoDiagnostic;
 use std::{
@@ -25,6 +28,7 @@ pub trait Template<'a>: fmt::Display + fmt::Debug + Clone {
 
     fn name(&self) -> &String;
     fn literal(&self) -> &String;
+    fn literals(&self) -> &HashMap<String, String>;
 
     fn context(&self) -> ContextArcMutex;
     fn make_renderer(&'a self) -> ExecResult<RendererVariant>;
@@ -79,6 +83,10 @@ impl<'a> Template<'a> for FileTemplate {
         &self.literal
     }
 
+    fn literals(&self) -> &HashMap<String, String> {
+        panic!("Attempted to call plural-form `literals()` on a file template");
+    }
+
     fn context(&self) -> ContextArcMutex {
         self.ctx_ref.clone()
     }
@@ -93,6 +101,7 @@ impl<'a> Template<'a> for FileTemplate {
 pub struct ProjectTemplate {
     ctx_ref: ContextArcMutex,
 
+    name: String,
     /// Hashmap of literals.
     /// Key is the relative filename + folder structure to emit (e.g. foo/bar/baz.txt)
     /// Value is the templated file literal
@@ -111,18 +120,44 @@ impl<'a> Template<'a> for ProjectTemplate {
                 path.as_ref().display().to_string(),
             ))?;
 
+        let cfg_builder = ProjectTemplateYamlBuilder::new(proj_dir.join("templaterc.yml"))?;
+        let cfg = cfg_builder.build()?;
+
+        let name = cfg_builder.name();
+
+        // load each referenced file in the project template as a literal
+        let mut literals = HashMap::new();
+        for (k, v) in cfg.files {
+            // try to load `v`, which will render to output path `k`.
+            let lit = fs::read_to_string(cfg_builder.folder().join(&v))
+                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+            literals.insert(k.clone(), lit.clone());
+
+            let mut ctx_lock = ctx.lock().unwrap();
+            ctx_lock
+                .tera_mut()
+                .add_raw_template(format!("{}/{}", &name, &k).as_str(), &lit)
+                .into_diagnostic()
+                .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
+        }
+
         Ok(Self {
             ctx_ref: ctx.clone(),
-            literals: todo!(), // TODO: read the `files` entry in the templaterc.yml file
+            name: cfg_builder.name().clone(),
+            literals,
         })
     }
 
     fn name(&self) -> &String {
-        todo!()
+        &self.name
     }
 
     fn literal(&self) -> &String {
-        todo!()
+        panic!("Attempted to call singular-form `literal()` on a project template");
+    }
+
+    fn literals(&self) -> &HashMap<String, String> {
+        &self.literals
     }
 
     fn context(&self) -> ContextArcMutex {
