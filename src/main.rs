@@ -8,15 +8,16 @@
 use clap::Parser;
 use cli::{Cli, CommandVariant};
 use error::{ExecError, ExecResult};
+use files::ConfigYamlBuilder;
 use std::{collections::HashMap, fs, process::exit};
-use templater::{RendererVariant, Template};
+use templater::{RendererVariant, Template, TemplateSet};
 
-use crate::templater::Renderer;
+use crate::{cli::OutputArgGroup, templater::Renderer};
 
 mod cli;
-mod config;
 mod dry_run;
 mod error;
+mod files;
 mod logger;
 mod templater;
 
@@ -25,41 +26,57 @@ fn main() {
         let args = Cli::parse();
 
         logger::init_logger(false); // hard-coding verbosity to false for now since there's currently no need for a verbose flag
-        config::init_global(args.subcommand.get_common_args().config.as_deref())?;
 
-        let (renderer, variables, output) = match args.subcommand {
-            CommandVariant::File(args) => (
-                config::get_global()
-                    .templates
+        let config_builder =
+            ConfigYamlBuilder::new(args.subcommand.get_common_args().config.as_deref())?;
+        let config = config_builder.build()?;
+
+        // load templates from configured paths
+        let template_paths = vec![
+            config_builder.folder().join(&config.file_templates_loc),
+            config_builder.folder().join(&config.project_templates_loc),
+        ];
+        let template_set = TemplateSet::new()
+            .load_file_templates(&template_paths[0])?
+            .load_project_templates(&template_paths[1])?;
+
+        // build rendering context from command-line arguments
+        struct TemplateRenderContext<'a> {
+            renderer: RendererVariant<'a>,
+            variables: HashMap<String, String>,
+            output_loc: OutputArgGroup,
+        }
+        let render_ctx = match args.subcommand {
+            CommandVariant::File(args) => TemplateRenderContext {
+                renderer: template_set
                     .get_file_template(&args.com.template)?
                     .make_renderer()?,
-                args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
-                args.output,
-            ),
-            CommandVariant::Project(args) => (
-                config::get_global()
-                    .templates
+                variables: args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
+                output_loc: args.output,
+            },
+            CommandVariant::Project(args) => TemplateRenderContext {
+                renderer: template_set
                     .get_project_template(&args.com.template)?
                     .make_renderer()?,
-                args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
-                args.output,
-            ),
+                variables: args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
+                output_loc: args.output,
+            },
         };
 
-        match renderer {
+        match render_ctx.renderer {
             // a file template was specified (devinit file)...
             RendererVariant::File(mut f) => {
                 // add user state (CLI-defined variables)
-                for (k, v) in variables {
+                for (k, v) in render_ctx.variables {
                     f.add_variable(k, v);
                 }
 
                 let f = f.render()?;
 
-                if output.dry_run {
+                if render_ctx.output_loc.dry_run {
                     println!("{}", &f);
                 } else {
-                    fs::write(&output.path.unwrap(), &f).map_err(|e| {
+                    fs::write(&render_ctx.output_loc.path.unwrap(), &f).map_err(|e| {
                         ExecError::FileReadWriteError(format!("Failed to write file: {e}"))
                     })?;
                 }
