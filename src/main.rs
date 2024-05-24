@@ -9,7 +9,7 @@ use clap::Parser;
 use cli::{Cli, CommandVariant};
 use error::{ExecError, ExecResult};
 use files::ConfigYamlBuilder;
-use std::{collections::HashMap, fs, process::exit};
+use std::{collections::HashMap, fs, path::PathBuf, process::exit};
 use templater::{RendererVariant, Template, TemplateSet};
 
 use crate::{cli::OutputArgGroup, templater::Renderer};
@@ -82,7 +82,37 @@ fn main() {
                 }
             }
             // a project template was specified (devinit project)...
-            RendererVariant::Project(_p) => todo!(),
+            RendererVariant::Project(mut p) => {
+                // add user state (CLI-defined variables)
+                for (k, v) in render_ctx.variables {
+                    p.add_variable(k, v);
+                }
+
+                let p = p.render()?;
+
+                if render_ctx.output_loc.dry_run {
+                    // TODO: implement Display for project templates
+                    todo!();
+                } else {
+                    for (pat, txt) in &p {
+                        let pat =
+                            PathBuf::from(&render_ctx.output_loc.path.as_ref().unwrap()).join(&pat);
+                        let dir = pat.parent().unwrap();
+
+                        fs::create_dir_all(dir).map_err(|e| {
+                            ExecError::FileReadWriteError(format!(
+                                "Failed to make directory at {dir:?}: {e}"
+                            ))
+                        })?;
+
+                        fs::write(&pat, &txt).map_err(|e| {
+                            ExecError::FileReadWriteError(format!(
+                                "Failed to write file to {pat:?}: {e}"
+                            ))
+                        })?;
+                    }
+                }
+            }
         }
 
         Ok(())

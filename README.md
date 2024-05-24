@@ -88,7 +88,6 @@ Break up the given string into lines of maximum length `len`, without breaking i
 ## Planned features
 
  - VS Code integration (extension)
- - Project templates
  - List of installed templates
  - Comment blocks - function to take a multi-line string and append a prefix (e.g. `//` before each line)
    - Standard options for comment blocks, e.g. 'hashtag', 'slash', 'c89', etc.
