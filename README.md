@@ -5,6 +5,8 @@
 Devinit is a command-line utility written in Rust that provides the ability to write templates for files and projects and interactively apply them to
 make boilerplate less annoying.
 
+See the `examples` directory for examples of writing file and project templates.
+
 
 ## Command-line usage examples
 
@@ -18,7 +20,7 @@ $ devinit file --dry-run "EditorConfig"
 
 # Create and populate a folder called 'dotnet-project' from the project
 # template 'DotNet', specifying the variable 'projectName'.
-$ devinit project dotnet-project/ "DotNet" -DprojectName="Utils"
+$ devinit project -p dotnet-project/ "DotNet" -DprojectName="Utils"
 ```
 
 
@@ -33,6 +35,16 @@ explicitly specified using the `--config` command-line option.
 |-------------------------|----------------------------------------------------------------|
 | `file_templates_loc`    | File template directory, relative to the configuration file    |
 | `project_templates_loc` | Project template directory, relative to the configuration file |
+
+
+### Configuring project templates
+
+Any folder in the `project_templates_loc` directory containing a **`templaterc.yml`** file will be registered as a project template. This
+configuration file is YAML, the same as the devinitrc file, and describes which files to process and where to output them.
+
+| Field   | Value                                                                                                          |
+|---------|----------------------------------------------------------------------------------------------------------------|
+| `files` | Dictionary of output paths (relative to evaluated template output) mapped to inputs, e.g. `out.txt: input.txt` |
 
 
 ## Templating
@@ -88,6 +100,6 @@ Break up the given string into lines of maximum length `len`, without breaking i
 ## Planned features
 
  - VS Code integration (extension)
- - List of installed templates
+ - List of installed templates (e.g. `devinit --list-templates` - or should it be per sub-command (file, project)?)
  - Comment blocks - function to take a multi-line string and append a prefix (e.g. `//` before each line)
    - Standard options for comment blocks, e.g. 'hashtag', 'slash', 'c89', etc.
