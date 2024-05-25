@@ -12,7 +12,7 @@ use files::ConfigYamlBuilder;
 use std::{collections::HashMap, fs, path::PathBuf, process::exit};
 use templater::{RendererVariant, Template, TemplateSet};
 
-use crate::{cli::OutputArgGroup, templater::Renderer};
+use crate::templater::Renderer;
 
 mod cli;
 mod dry_run;
@@ -24,11 +24,11 @@ mod templater;
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
         let args = Cli::parse();
+        let args_com = args.subcommand.get_common_args();
 
         logger::init_logger(false); // hard-coding verbosity to false for now since there's currently no need for a verbose flag
 
-        let config_builder =
-            ConfigYamlBuilder::new(args.subcommand.get_common_args().config.as_deref())?;
+        let config_builder = ConfigYamlBuilder::new(args_com.config.as_deref())?;
         let config = config_builder.build()?;
 
         // load templates from configured paths
@@ -41,42 +41,40 @@ fn main() {
             .load_project_templates(&template_paths[1])?;
 
         // build rendering context from command-line arguments
-        struct TemplateRenderContext<'a> {
-            renderer: RendererVariant<'a>,
-            variables: HashMap<String, String>,
-            output_loc: OutputArgGroup,
-        }
-        let render_ctx = match args.subcommand {
-            CommandVariant::File(args) => TemplateRenderContext {
-                renderer: template_set
+        let (renderer, output_conf) = match args.subcommand {
+            CommandVariant::File(ref args) => (
+                template_set
                     .get_file_template(&args.com.template)?
                     .make_renderer()?,
-                variables: args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
-                output_loc: args.output,
-            },
-            CommandVariant::Project(args) => TemplateRenderContext {
-                renderer: template_set
+                &args.output,
+            ),
+            CommandVariant::Project(ref args) => (
+                template_set
                     .get_project_template(&args.com.template)?
                     .make_renderer()?,
-                variables: args.com.var_defines.into_iter().collect::<HashMap<_, _>>(),
-                output_loc: args.output,
-            },
+                &args.output,
+            ),
         };
+        let vars_map = args_com
+            .var_defines
+            .clone()
+            .into_iter()
+            .collect::<HashMap<_, _>>();
 
-        match render_ctx.renderer {
+        match renderer {
             // a file template was specified (devinit file)...
             RendererVariant::File(mut f) => {
                 // add user state (CLI-defined variables)
-                for (k, v) in render_ctx.variables {
+                for (k, v) in vars_map {
                     f.add_variable(k, v);
                 }
 
                 let f = f.render()?;
 
-                if render_ctx.output_loc.dry_run {
-                    println!("{}", &f);
+                if output_conf.dry_run {
+                    dry_run::print_file_render(&args.subcommand.get_common_args().template, &f);
                 } else {
-                    fs::write(&render_ctx.output_loc.path.unwrap(), &f).map_err(|e| {
+                    fs::write(output_conf.path.as_ref().unwrap(), &f).map_err(|e| {
                         ExecError::FileReadWriteError(format!("Failed to write file: {e}"))
                     })?;
                 }
@@ -84,19 +82,17 @@ fn main() {
             // a project template was specified (devinit project)...
             RendererVariant::Project(mut p) => {
                 // add user state (CLI-defined variables)
-                for (k, v) in render_ctx.variables {
+                for (k, v) in vars_map {
                     p.add_variable(k, v);
                 }
 
                 let p = p.render()?;
 
-                if render_ctx.output_loc.dry_run {
-                    // TODO: implement Display for project templates
-                    todo!();
+                if output_conf.dry_run {
+                    dry_run::print_project_render(p);
                 } else {
                     for (pat, txt) in &p {
-                        let pat =
-                            PathBuf::from(&render_ctx.output_loc.path.as_ref().unwrap()).join(&pat);
+                        let pat = PathBuf::from(&output_conf.path.as_ref().unwrap()).join(&pat);
                         let dir = pat.parent().unwrap();
 
                         fs::create_dir_all(dir).map_err(|e| {

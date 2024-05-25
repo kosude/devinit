@@ -21,7 +21,7 @@ use std::{
 };
 
 /// A generic template trait that encompasses (and is implemented by) both file and project templates.
-pub trait Template<'a>: fmt::Display + fmt::Debug + Clone {
+pub trait Template<'a>: fmt::Debug + Clone {
     type Me;
 
     fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me>;

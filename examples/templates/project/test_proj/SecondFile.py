@@ -1,2 +1,2 @@
-print("Hello world")
-{{ helloworld }}
+# {{ "templated by devinit" | upper }}
+print("{{ helloworld }}")

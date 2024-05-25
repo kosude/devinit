@@ -5,28 +5,25 @@
  *   See the LICENCE file for more information.
  */
 
-use std::fmt;
+use std::collections::HashMap;
 
-use crate::templater::{FileTemplate, ProjectTemplate, Template};
+use colored::Colorize;
 
 const INDENT_PREFIX: &'static str = "    ";
 
-impl fmt::Display for FileTemplate {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "\"{}\":\n{}{}",
-            self.name(),
-            &INDENT_PREFIX,
-            self.literal()
-                .replace("\n", format!("\n{}", INDENT_PREFIX).as_str())
-        )
-    }
+pub fn print_file_render<S: AsRef<str>>(name: S, render: S) {
+    println!(
+        "{}:\n{}{}",
+        format!("\"{}\"", name.as_ref()).green(),
+        &INDENT_PREFIX,
+        render
+            .as_ref()
+            .replace("\n", format!("\n{}", &INDENT_PREFIX).as_str())
+    );
 }
 
-impl fmt::Display for ProjectTemplate {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO displaying project templates
-        todo!()
+pub fn print_project_render<S: AsRef<str>>(outputs: HashMap<S, S>) {
+    for (output, render) in outputs {
+        print_file_render(&output, &render);
     }
 }
