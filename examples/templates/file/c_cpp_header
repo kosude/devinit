@@ -1,0 +1,5 @@
+{% set start = "/*" -%}
+{% set prefix = " *   " -%}
+{% set end = " */" -%}
+
+{% include "copyright" -%}

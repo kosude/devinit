@@ -1,0 +1,9 @@
+{{ start }}
+{{ prefix }}Copyright (c) {{ year }} {{ copyright_holders }}.
+{{ prefix }}All Rights Reserved.
+
+{%- if licence_file %}
+{{ prefix }}
+{{ prefix }}See the {{ licence_file }} file for more information.
+{%- endif %}
+{{ end }}
