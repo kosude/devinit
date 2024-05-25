@@ -6,4 +6,4 @@
 {{ prefix }}
 {{ prefix }}See the {{ licence_file }} file for more information.
 {%- endif %}
-{{ end }}
+{{ end -}}

@@ -1,3 +1,3 @@
 files:
-    tests/FirstFile.txt: FirstFile.txt
+    FirstFile.txt: FirstFile.txt
     foo/baz/SecondFile.py: SecondFile.py
