@@ -8,7 +8,7 @@
 use clap::Parser;
 use cli::{Cli, CommandVariant};
 use colored::Colorize;
-use error::{ExecError, ExecResult};
+use error::{DevinitError, DevinitResult};
 use files::ConfigYamlBuilder;
 use std::{collections::HashMap, fs, path::PathBuf, process::exit};
 use templater::{RendererVariant, Template, TemplateSet};
@@ -23,7 +23,7 @@ mod logger;
 mod templater;
 
 fn main() {
-    if let Err(e) = || -> ExecResult<()> {
+    if let Err(e) = || -> DevinitResult<()> {
         let args = Cli::parse();
 
         logger::init_logger(false); // hard-coding verbosity to false for now since there's currently no need for a verbose flag
@@ -84,7 +84,7 @@ fn main() {
                     dry_run::print_file_render(&args.subcommand.get_common_args().template, &f);
                 } else {
                     fs::write(output_conf.path.as_ref().unwrap(), &f).map_err(|e| {
-                        ExecError::FileReadWriteError(format!("Failed to write file: {e}"))
+                        DevinitError::FileReadWriteError(format!("Failed to write file: {e}"))
                     })?;
                 }
             }
@@ -105,13 +105,13 @@ fn main() {
                         let dir = pat.parent().unwrap();
 
                         fs::create_dir_all(dir).map_err(|e| {
-                            ExecError::FileReadWriteError(format!(
+                            DevinitError::FileReadWriteError(format!(
                                 "Failed to make directory at {dir:?}: {e}"
                             ))
                         })?;
 
                         fs::write(&pat, &txt).map_err(|e| {
-                            ExecError::FileReadWriteError(format!(
+                            DevinitError::FileReadWriteError(format!(
                                 "Failed to write file to {pat:?}: {e}"
                             ))
                         })?;

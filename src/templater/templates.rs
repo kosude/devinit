@@ -7,7 +7,7 @@
 
 use super::{Context, ContextArcMutex, FileRenderer, ProjectRenderer, Renderer, RendererVariant};
 use crate::{
-    error::{ExecError, ExecResult},
+    error::{DevinitError, DevinitResult},
     files::ProjectTemplateYamlBuilder,
 };
 use log::error;
@@ -24,7 +24,7 @@ use std::{
 pub trait Template<'a>: fmt::Debug + Clone {
     type Me;
 
-    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me>;
+    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> DevinitResult<Self::Me>;
 
     fn name(&self) -> &String;
     fn literal(&self) -> &String;
@@ -32,7 +32,7 @@ pub trait Template<'a>: fmt::Debug + Clone {
     fn source(&self) -> &String;
 
     fn context(&self) -> ContextArcMutex;
-    fn make_renderer(&'a self) -> ExecResult<RendererVariant>;
+    fn make_renderer(&'a self) -> DevinitResult<RendererVariant>;
 }
 
 /// A template to initialise a single file
@@ -49,26 +49,26 @@ impl<'a> Template<'a> for FileTemplate {
     type Me = Self;
 
     /// Load the file template from a single template configuration script
-    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me> {
+    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> DevinitResult<Self::Me> {
         let name = String::from(
             path.as_ref()
                 .file_name()
-                .ok_or(ExecError::FileReadWriteError(format!(
+                .ok_or(DevinitError::FileReadWriteError(format!(
                     "Failed to extract filename from path {:?}",
                     path.as_ref()
                 )))?
                 .to_str()
                 .unwrap(),
         );
-        let literal =
-            fs::read_to_string(&path).map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+        let literal = fs::read_to_string(&path)
+            .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
 
         let mut ctx_lock = ctx.lock().unwrap();
         ctx_lock
             .tera_mut()
             .add_raw_template(&name, &literal)
             .into_diagnostic()
-            .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
+            .map_err(|e| DevinitError::TemplateParseError(format!("{:?}", e)))?;
 
         Ok(Self {
             ctx_ref: ctx.clone(),
@@ -98,7 +98,7 @@ impl<'a> Template<'a> for FileTemplate {
         self.ctx_ref.clone()
     }
 
-    fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
+    fn make_renderer(&'a self) -> DevinitResult<RendererVariant> {
         Ok(FileRenderer::new(&self)?)
     }
 }
@@ -120,11 +120,11 @@ impl<'a> Template<'a> for ProjectTemplate {
     type Me = Self;
 
     /// Load the project template from a configuration file in addition to any template configuration scripts
-    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> ExecResult<Self::Me> {
+    fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> DevinitResult<Self::Me> {
         let proj_dir = path
             .as_ref()
             .parent()
-            .ok_or(ExecError::MissingProjectDirError(
+            .ok_or(DevinitError::MissingProjectDirError(
                 path.as_ref().display().to_string(),
             ))?;
 
@@ -138,7 +138,7 @@ impl<'a> Template<'a> for ProjectTemplate {
         for (k, v) in cfg.files {
             // try to load `v`, which will render to output path `k`.
             let lit = fs::read_to_string(cfg_builder.folder().join(&v))
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+                .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
             literals.insert(k.clone(), lit.clone());
 
             let mut ctx_lock = ctx.lock().unwrap();
@@ -146,7 +146,7 @@ impl<'a> Template<'a> for ProjectTemplate {
                 .tera_mut()
                 .add_raw_template(format!("{}/{}", &name, &k).as_str(), &lit)
                 .into_diagnostic()
-                .map_err(|e| ExecError::TemplateParseError(format!("{:?}", e)))?;
+                .map_err(|e| DevinitError::TemplateParseError(format!("{:?}", e)))?;
         }
 
         Ok(Self {
@@ -177,7 +177,7 @@ impl<'a> Template<'a> for ProjectTemplate {
         self.ctx_ref.clone()
     }
 
-    fn make_renderer(&'a self) -> ExecResult<RendererVariant> {
+    fn make_renderer(&'a self) -> DevinitResult<RendererVariant> {
         Ok(ProjectRenderer::new(&self)?)
     }
 }
@@ -222,7 +222,7 @@ impl<'a> TemplateSet<'a> {
         }
     }
 
-    pub fn load_file_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
+    pub fn load_file_templates<P: AsRef<Path>>(mut self, dir: P) -> DevinitResult<Self> {
         let paths = Self::read_templates_dir(dir, false)?;
         let ctx = &self.ctx;
         Self::load_templates_from_path_list(&mut self.file_templates, paths, |p| {
@@ -232,7 +232,7 @@ impl<'a> TemplateSet<'a> {
         Ok(self)
     }
 
-    pub fn load_project_templates<P: AsRef<Path>>(mut self, dir: P) -> ExecResult<Self> {
+    pub fn load_project_templates<P: AsRef<Path>>(mut self, dir: P) -> DevinitResult<Self> {
         let paths = Self::read_templates_dir(dir, true)?;
         let ctx = &self.ctx;
         Self::load_templates_from_path_list(&mut self.project_templates, paths, |p| {
@@ -243,7 +243,7 @@ impl<'a> TemplateSet<'a> {
     }
 
     /// Recursively read through a directory for template config scripts
-    fn read_templates_dir<P: AsRef<Path>>(path: P, projects: bool) -> ExecResult<Vec<PathBuf>> {
+    fn read_templates_dir<P: AsRef<Path>>(path: P, projects: bool) -> DevinitResult<Vec<PathBuf>> {
         let mut buf = vec![];
         let Ok(entries) = fs::read_dir(path) else {
             return Ok(buf);
@@ -251,10 +251,10 @@ impl<'a> TemplateSet<'a> {
 
         for entry in entries {
             // get entry (file/folder) metadata
-            let entry = entry.map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+            let entry = entry.map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
             let meta = entry
                 .metadata()
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+                .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
 
             if meta.is_dir() {
                 let mut subdir = Self::read_templates_dir(entry.path(), projects)?;
@@ -275,12 +275,12 @@ impl<'a> TemplateSet<'a> {
     fn load_templates_from_path_list<
         P: AsRef<Path>,
         T: Template<'a>,
-        F: Fn(&P) -> ExecResult<T>,
+        F: Fn(&P) -> DevinitResult<T>,
     >(
         set: &mut HashSet<TemplateSetEntry<'a, T>>,
         paths: Vec<P>,
         load_func: F,
-    ) -> ExecResult<()> {
+    ) -> DevinitResult<()> {
         Ok(for p in paths.iter() {
             let t = TemplateSetEntry(load_func(p)?, PhantomData);
 
@@ -294,20 +294,23 @@ impl<'a> TemplateSet<'a> {
     }
 
     /// Retrieve a file template from the set
-    pub fn get_file_template(&self, id: &str) -> ExecResult<&FileTemplate> {
+    pub fn get_file_template(&self, id: &str) -> DevinitResult<&FileTemplate> {
         Ok(&self
             .file_templates
             .get(id)
-            .ok_or(ExecError::IdNotFoundError(format!("\"{}\" (FILE)", id)))?
+            .ok_or(DevinitError::IdNotFoundError(format!("\"{}\" (FILE)", id)))?
             .0)
     }
 
     /// Retrieve a project template from the set
-    pub fn get_project_template(&self, id: &str) -> ExecResult<&ProjectTemplate> {
+    pub fn get_project_template(&self, id: &str) -> DevinitResult<&ProjectTemplate> {
         Ok(&self
             .project_templates
             .get(id)
-            .ok_or(ExecError::IdNotFoundError(format!("\"{}\" (PROJECT)", id)))?
+            .ok_or(DevinitError::IdNotFoundError(format!(
+                "\"{}\" (PROJECT)",
+                id
+            )))?
             .0)
     }
 

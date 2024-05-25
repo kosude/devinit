@@ -5,8 +5,8 @@
  *   See the LICENCE file for more information.
  */
 
-mod config;
-pub use config::*;
+mod devinitrc;
+pub use devinitrc::*;
 
-mod project;
-pub use project::*;
+mod templaterc;
+pub use templaterc::*;

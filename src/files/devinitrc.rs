@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use crate::error::{ExecError, ExecResult};
+use crate::error::{DevinitError, DevinitResult};
 use serde::Deserialize;
 use std::{
     fs,
@@ -28,7 +28,7 @@ pub struct ConfigYamlBuilder {
 
 impl ConfigYamlBuilder {
     /// Initialise a config yaml builder with an optional user-specified configuration path.
-    pub fn new<P: AsRef<Path>>(user_path: Option<P>) -> ExecResult<Self> {
+    pub fn new<P: AsRef<Path>>(user_path: Option<P>) -> DevinitResult<Self> {
         let path = Self::find_config(user_path)?.to_path_buf();
         Ok(Self {
             path: path.clone(),
@@ -37,14 +37,14 @@ impl ConfigYamlBuilder {
     }
 
     /// Load the config YAML file into a serializable ConfigYaml struct.
-    pub fn build(&self) -> ExecResult<ConfigYaml> {
+    pub fn build(&self) -> DevinitResult<ConfigYaml> {
         // load file
         let file = fs::read_to_string(&self.path)
-            .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+            .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
 
         // deserialise
         serde_yaml::from_str::<ConfigYaml>(file.as_str())
-            .map_err(|e| ExecError::InvalidConfigError(e.to_string()))
+            .map_err(|e| DevinitError::InvalidConfigError(e.to_string()))
     }
 
     /// Return the path of the folder containing the config that is being read.
@@ -53,12 +53,12 @@ impl ConfigYamlBuilder {
     }
 
     /// Find configuration file on disk, from a set of hard-coded locations **or** the user-specified path, if any.
-    fn find_config<P: AsRef<Path>>(user_path: Option<P>) -> ExecResult<PathBuf> {
+    fn find_config<P: AsRef<Path>>(user_path: Option<P>) -> DevinitResult<PathBuf> {
         // first attempt user-specified path if applicable
         if let Some(p) = user_path {
             if p.as_ref()
                 .try_exists()
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?
+                .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?
             {
                 return Ok(p.as_ref().to_path_buf());
             }
@@ -68,7 +68,7 @@ impl ConfigYamlBuilder {
         if let Some(home_dir) = dirs::home_dir() {
             let p = home_dir.join(".devinit").join("devinitrc.yml");
             if p.try_exists()
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?
+                .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?
             {
                 return Ok(p);
             }
@@ -78,12 +78,12 @@ impl ConfigYamlBuilder {
         if let Some(config_dir) = dirs::config_dir() {
             let p = config_dir.join("devinit").join("devinitrc.yml");
             if p.try_exists()
-                .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?
+                .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?
             {
                 return Ok(p);
             }
         }
 
-        Err(ExecError::NoConfigError())
+        Err(DevinitError::NoConfigError())
     }
 }

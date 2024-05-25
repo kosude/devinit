@@ -8,10 +8,10 @@
 use log::error;
 use std::process::exit;
 
-pub type ExecResult<T> = Result<T, ExecError>;
+pub type DevinitResult<T> = Result<T, DevinitError>;
 
 #[derive(Debug)]
-pub enum ExecError {
+pub enum DevinitError {
     FileReadWriteError(String),
     NoConfigError(),
     InvalidConfigError(String),
@@ -22,7 +22,7 @@ pub enum ExecError {
     InvalidProjectConfigError(String),
 }
 
-impl ExecError {
+impl DevinitError {
     fn base_handle_fn(&self) {
         match &self {
             Self::FileReadWriteError(s) => {
@@ -64,17 +64,17 @@ impl ExecError {
     }
 }
 
-impl From<&ExecError> for i32 {
-    fn from(value: &ExecError) -> Self {
+impl From<&DevinitError> for i32 {
+    fn from(value: &DevinitError) -> Self {
         match value {
-            ExecError::FileReadWriteError(_) => 1,
-            ExecError::NoConfigError() => 2,
-            ExecError::InvalidConfigError(_) => 3,
-            ExecError::IdNotFoundError(_) => 4,
-            ExecError::TemplateParseError(_) => 5,
-            ExecError::TemplateRenderError(_) => 6,
-            ExecError::MissingProjectDirError(_) => 7,
-            ExecError::InvalidProjectConfigError(_) => 8,
+            DevinitError::FileReadWriteError(_) => 1,
+            DevinitError::NoConfigError() => 2,
+            DevinitError::InvalidConfigError(_) => 3,
+            DevinitError::IdNotFoundError(_) => 4,
+            DevinitError::TemplateParseError(_) => 5,
+            DevinitError::TemplateRenderError(_) => 6,
+            DevinitError::MissingProjectDirError(_) => 7,
+            DevinitError::InvalidProjectConfigError(_) => 8,
         }
     }
 }

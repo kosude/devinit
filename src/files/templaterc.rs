@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use crate::error::{ExecError, ExecResult};
+use crate::error::{DevinitError, DevinitResult};
 use serde::Deserialize;
 use std::{
     collections::HashMap,
@@ -31,7 +31,7 @@ pub struct ProjectTemplateYamlBuilder {
 
 impl ProjectTemplateYamlBuilder {
     /// Initialise a config yaml builder with the path to read from.
-    pub fn new<P: AsRef<Path>>(path: P) -> ExecResult<Self> {
+    pub fn new<P: AsRef<Path>>(path: P) -> DevinitResult<Self> {
         let path_parent = path.as_ref().parent().unwrap();
 
         Ok(Self {
@@ -39,7 +39,7 @@ impl ProjectTemplateYamlBuilder {
             path_parent: path_parent.to_path_buf(),
             name: path_parent
                 .file_stem()
-                .ok_or(ExecError::InvalidProjectConfigError(format!(
+                .ok_or(DevinitError::InvalidProjectConfigError(format!(
                     "No file stem found in filename of path: {}",
                     path_parent.to_str().unwrap()
                 )))?
@@ -50,14 +50,14 @@ impl ProjectTemplateYamlBuilder {
     }
 
     /// Load the config YAML file into a serializable ConfigYaml struct.
-    pub fn build(&self) -> ExecResult<ProjectTemplateYaml> {
+    pub fn build(&self) -> DevinitResult<ProjectTemplateYaml> {
         // load file
         let file = fs::read_to_string(&self.path)
-            .map_err(|e| ExecError::FileReadWriteError(e.to_string()))?;
+            .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
 
         // deserialise
         serde_yaml::from_str::<ProjectTemplateYaml>(file.as_str())
-            .map_err(|e| ExecError::InvalidConfigError(e.to_string()))
+            .map_err(|e| DevinitError::InvalidConfigError(e.to_string()))
     }
 
     /// Return the path of the folder containing the project template config file.
