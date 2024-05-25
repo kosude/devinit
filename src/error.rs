@@ -29,7 +29,7 @@ impl ExecError {
                 error!("File read/write error: {s}\n");
             }
             Self::NoConfigError() => {
-                error!("No configuration file found (is your devinit installation valid?)\n");
+                error!("No configuration file found - validate your devinit installation or use --config\n");
             }
             Self::InvalidConfigError(s) => {
                 error!("Invalid or malformed config syntax: {s}\n");

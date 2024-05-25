@@ -14,12 +14,17 @@ use clap::{Args, Parser, Subcommand};
 pub struct Cli {
     #[command(subcommand)]
     pub subcommand: CommandVariant,
+
+    /// Specify path to the devinit configuration file
+    #[arg(long)]
+    pub config: Option<String>,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum CommandVariant {
     File(FileArgs),
     Project(ProjectArgs),
+    List(ListArgs),
 }
 
 impl CommandVariant {
@@ -27,6 +32,11 @@ impl CommandVariant {
         match &self {
             CommandVariant::File(f) => &f.com,
             CommandVariant::Project(p) => &p.com,
+            _ => {
+                panic!(
+                    "get_common_args() called on enum which does not contain a CommonArgGroup member"
+                )
+            }
         }
     }
 }
@@ -51,6 +61,10 @@ pub struct ProjectArgs {
     pub com: CommonArgGroup,
 }
 
+/// List all available templates
+#[derive(Args, Debug)]
+pub struct ListArgs {}
+
 #[derive(Args, Debug)]
 #[group(required = true, multiple = false)]
 pub struct OutputArgGroup {
@@ -71,10 +85,6 @@ pub struct CommonArgGroup {
     /// Define variables to be substituted in the template
     #[arg(short = 'D', number_of_values = 1, value_parser = parse_key_val::<String, String>)]
     pub var_defines: Vec<(String, String)>,
-
-    /// Specify path to the devinit configuration file
-    #[arg(long)]
-    pub config: Option<String>,
     // /// Print verbose output
     // #[arg(short, long)]
     // pub verbose: bool,

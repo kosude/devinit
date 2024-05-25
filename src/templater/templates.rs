@@ -29,6 +29,7 @@ pub trait Template<'a>: fmt::Debug + Clone {
     fn name(&self) -> &String;
     fn literal(&self) -> &String;
     fn literals(&self) -> &HashMap<String, String>;
+    fn source(&self) -> &String;
 
     fn context(&self) -> ContextArcMutex;
     fn make_renderer(&'a self) -> ExecResult<RendererVariant>;
@@ -41,6 +42,7 @@ pub struct FileTemplate {
 
     name: String,
     literal: String,
+    source: String,
 }
 
 impl<'a> Template<'a> for FileTemplate {
@@ -72,6 +74,7 @@ impl<'a> Template<'a> for FileTemplate {
             ctx_ref: ctx.clone(),
             name,
             literal,
+            source: path.as_ref().display().to_string(),
         })
     }
 
@@ -85,6 +88,10 @@ impl<'a> Template<'a> for FileTemplate {
 
     fn literals(&self) -> &HashMap<String, String> {
         panic!("Attempted to call plural-form `literals()` on a file template");
+    }
+
+    fn source(&self) -> &String {
+        &self.source
     }
 
     fn context(&self) -> ContextArcMutex {
@@ -106,6 +113,7 @@ pub struct ProjectTemplate {
     /// Key is the relative filename + folder structure to emit (e.g. foo/bar/baz.txt)
     /// Value is the templated file literal
     literals: HashMap<String, String>,
+    source: String,
 }
 
 impl<'a> Template<'a> for ProjectTemplate {
@@ -145,6 +153,7 @@ impl<'a> Template<'a> for ProjectTemplate {
             ctx_ref: ctx.clone(),
             name: cfg_builder.name().clone(),
             literals,
+            source: path.as_ref().display().to_string(),
         })
     }
 
@@ -158,6 +167,10 @@ impl<'a> Template<'a> for ProjectTemplate {
 
     fn literals(&self) -> &HashMap<String, String> {
         &self.literals
+    }
+
+    fn source(&self) -> &String {
+        &self.source
     }
 
     fn context(&self) -> ContextArcMutex {
@@ -296,5 +309,15 @@ impl<'a> TemplateSet<'a> {
             .get(id)
             .ok_or(ExecError::IdNotFoundError(format!("\"{}\" (PROJECT)", id)))?
             .0)
+    }
+
+    /// Get a list of references to all loaded file templates
+    pub fn get_file_templates_all(&self) -> Vec<&FileTemplate> {
+        self.file_templates.iter().map(|e| &e.0).collect()
+    }
+
+    /// Get a list of references to all loaded project templates
+    pub fn get_project_templates_all(&self) -> Vec<&ProjectTemplate> {
+        self.project_templates.iter().map(|e| &e.0).collect()
     }
 }

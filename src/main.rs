@@ -7,6 +7,7 @@
 
 use clap::Parser;
 use cli::{Cli, CommandVariant};
+use colored::Colorize;
 use error::{ExecError, ExecResult};
 use files::ConfigYamlBuilder;
 use std::{collections::HashMap, fs, path::PathBuf, process::exit};
@@ -24,11 +25,10 @@ mod templater;
 fn main() {
     if let Err(e) = || -> ExecResult<()> {
         let args = Cli::parse();
-        let args_com = args.subcommand.get_common_args();
 
         logger::init_logger(false); // hard-coding verbosity to false for now since there's currently no need for a verbose flag
 
-        let config_builder = ConfigYamlBuilder::new(args_com.config.as_deref())?;
+        let config_builder = ConfigYamlBuilder::new(args.config.as_deref())?;
         let config = config_builder.build()?;
 
         // load templates from configured paths
@@ -39,6 +39,12 @@ fn main() {
         let template_set = TemplateSet::new()
             .load_file_templates(&template_paths[0])?
             .load_project_templates(&template_paths[1])?;
+
+        // if the list subcommand is specified, then list them and return early.
+        if let CommandVariant::List(_) = args.subcommand {
+            list_templates(&template_set);
+            return Ok(());
+        }
 
         // build rendering context from command-line arguments
         let (renderer, output_conf) = match args.subcommand {
@@ -54,8 +60,11 @@ fn main() {
                     .make_renderer()?,
                 &args.output,
             ),
+            _ => panic!("Invalid subcommand found, unexpected behaviour"),
         };
-        let vars_map = args_com
+        let vars_map = args
+            .subcommand
+            .get_common_args()
             .var_defines
             .clone()
             .into_iter()
@@ -117,4 +126,36 @@ fn main() {
     }
 
     exit(0);
+}
+
+fn list_templates(templates: &TemplateSet) {
+    // function to print a single list item (template)
+    fn print_tpl_brief<'a, T: Template<'a>>(t: &&T) {
+        println!(
+            "  - {} {}",
+            t.name().green().bold(),
+            format!("({})", t.source()).dimmed()
+        );
+    }
+
+    let ft = templates.get_file_templates_all();
+    let pt = templates.get_project_templates_all();
+
+    println!("{}", "File templates:".bold());
+    if ft.len() > 0 {
+        for t in &ft {
+            print_tpl_brief(t);
+        }
+    } else {
+        println!("{}", "  No file templates found".red());
+    }
+
+    println!("{}", "Project templates:".bold());
+    if pt.len() > 0 {
+        for t in &pt {
+            print_tpl_brief(t);
+        }
+    } else {
+        println!("{}", "  No project templates found".red());
+    }
 }
