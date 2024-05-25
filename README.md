@@ -7,6 +7,8 @@ make boilerplate less annoying.
 
 See the `examples` directory for examples of writing file and project templates.
 
+A tracker for planned features can be found on [Trello](https://trello.com/b/QkX7i1P1/devinit).
+
 
 ## Command-line usage examples
 
@@ -95,11 +97,3 @@ Break up the given string into lines of maximum length `len`, without breaking i
 ```
 
 ---
-
-
-## Planned features
-
- - VS Code integration (extension)
- - List of installed templates (e.g. `devinit --list-templates` - or should it be per sub-command (file, project)?)
- - Comment blocks - function to take a multi-line string and append a prefix (e.g. `//` before each line)
-   - Standard options for comment blocks, e.g. 'hashtag', 'slash', 'c89', etc.
