@@ -27,8 +27,6 @@ pub trait Template<'a>: fmt::Debug + Clone {
     fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> DevinitResult<Self::Me>;
 
     fn name(&self) -> &String;
-    fn literal(&self) -> &String;
-    fn literals(&self) -> &HashMap<String, String>;
     fn source(&self) -> &String;
 
     fn context(&self) -> ContextArcMutex;
@@ -82,14 +80,6 @@ impl<'a> Template<'a> for FileTemplate {
         &self.name
     }
 
-    fn literal(&self) -> &String {
-        &self.literal
-    }
-
-    fn literals(&self) -> &HashMap<String, String> {
-        panic!("Attempted to call plural-form `literals()` on a file template");
-    }
-
     fn source(&self) -> &String {
         &self.source
     }
@@ -100,6 +90,12 @@ impl<'a> Template<'a> for FileTemplate {
 
     fn make_renderer(&'a self) -> DevinitResult<RendererVariant> {
         Ok(FileRenderer::new(&self)?)
+    }
+}
+
+impl FileTemplate {
+    pub fn literal(&self) -> &String {
+        &self.literal
     }
 }
 
@@ -114,6 +110,9 @@ pub struct ProjectTemplate {
     /// Value is the templated file literal
     literals: HashMap<String, String>,
     source: String,
+
+    /// Names of each template file as can be found in the Tera instance
+    file_template_names: Vec<String>,
 }
 
 impl<'a> Template<'a> for ProjectTemplate {
@@ -134,6 +133,7 @@ impl<'a> Template<'a> for ProjectTemplate {
         let name = cfg_builder.name();
 
         // load each referenced file in the project template as a literal
+        let mut file_template_names = vec![];
         let mut literals = HashMap::new();
         for (k, v) in cfg.files {
             // try to load `v`, which will render to output path `k`.
@@ -141,12 +141,16 @@ impl<'a> Template<'a> for ProjectTemplate {
                 .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
             literals.insert(k.clone(), lit.clone());
 
+            let id = format!("{}/{}", &name, &k);
+
             let mut ctx_lock = ctx.lock().unwrap();
             ctx_lock
                 .tera_mut()
-                .add_raw_template(format!("{}/{}", &name, &k).as_str(), &lit)
+                .add_raw_template(&id.as_str(), &lit)
                 .into_diagnostic()
                 .map_err(|e| DevinitError::TemplateParseError(format!("{:?}", e)))?;
+
+            file_template_names.push(id);
         }
 
         Ok(Self {
@@ -154,19 +158,12 @@ impl<'a> Template<'a> for ProjectTemplate {
             name: cfg_builder.name().clone(),
             literals,
             source: path.as_ref().display().to_string(),
+            file_template_names,
         })
     }
 
     fn name(&self) -> &String {
         &self.name
-    }
-
-    fn literal(&self) -> &String {
-        panic!("Attempted to call singular-form `literal()` on a project template");
-    }
-
-    fn literals(&self) -> &HashMap<String, String> {
-        &self.literals
     }
 
     fn source(&self) -> &String {
@@ -179,6 +176,16 @@ impl<'a> Template<'a> for ProjectTemplate {
 
     fn make_renderer(&'a self) -> DevinitResult<RendererVariant> {
         Ok(ProjectRenderer::new(&self)?)
+    }
+}
+
+impl ProjectTemplate {
+    pub fn file_template_names(&self) -> &Vec<String> {
+        &self.file_template_names
+    }
+
+    pub fn literals(&self) -> &HashMap<String, String> {
+        &self.literals
     }
 }
 

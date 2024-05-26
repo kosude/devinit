@@ -11,7 +11,7 @@ use colored::Colorize;
 use error::{DevinitError, DevinitResult};
 use files::ConfigYamlBuilder;
 use std::{collections::HashMap, fs, path::PathBuf, process::exit};
-use templater::{RendererVariant, Template, TemplateSet};
+use templater::{get_missing_template_vars, RendererVariant, Template, TemplateSet};
 
 use crate::templater::Renderer;
 
@@ -62,7 +62,9 @@ fn main() {
             ),
             _ => panic!("Invalid subcommand found, unexpected behaviour"),
         };
-        let vars_map = args
+
+        // get vars that were recieved from the command line
+        let recieved_vars = args
             .subcommand
             .get_common_args()
             .var_defines
@@ -70,11 +72,37 @@ fn main() {
             .into_iter()
             .collect::<HashMap<_, _>>();
 
+        // get the names of the variables needed for the template render
+        let mut requested_vars = vec![];
+        match renderer {
+            RendererVariant::File(ref f) => requested_vars.append(&mut get_missing_template_vars(
+                f.template().context(),
+                f.template().name(),
+            )?),
+            RendererVariant::Project(ref p) => {
+                for name in p.template().file_template_names() {
+                    requested_vars.append(&mut get_missing_template_vars(
+                        p.template().context(),
+                        name,
+                    )?);
+                }
+            }
+        };
+        if output_conf.list_vars {
+            list_variables(
+                &requested_vars
+                    .iter()
+                    .filter(|v| !recieved_vars.contains_key(*v))
+                    .collect(),
+            );
+            return Ok(());
+        }
+
         match renderer {
             // a file template was specified (devinit file)...
             RendererVariant::File(mut f) => {
                 // add user state (CLI-defined variables)
-                for (k, v) in vars_map {
+                for (k, v) in recieved_vars {
                     f.add_variable(k, v);
                 }
 
@@ -91,7 +119,7 @@ fn main() {
             // a project template was specified (devinit project)...
             RendererVariant::Project(mut p) => {
                 // add user state (CLI-defined variables)
-                for (k, v) in vars_map {
+                for (k, v) in recieved_vars {
                     p.add_variable(k, v);
                 }
 
@@ -157,5 +185,12 @@ fn list_templates(templates: &TemplateSet) {
         }
     } else {
         println!("{}", "  No project templates found".red());
+    }
+}
+
+fn list_variables(variables: &Vec<&String>) {
+    println!("{}", "Remaining variables:".bold());
+    for var in variables {
+        println!("  - {}", var.blue().bold());
     }
 }

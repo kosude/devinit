@@ -5,6 +5,9 @@
  *   See the LICENCE file for more information.
  */
 
+mod ast_traverse;
+pub use ast_traverse::*;
+
 mod context;
 pub use context::*;
 

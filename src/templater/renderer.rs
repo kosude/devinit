@@ -27,6 +27,8 @@ pub trait Renderer<'a> {
     fn add_variable<S: AsRef<str>>(&mut self, key: S, val: S);
 
     fn render(&self) -> DevinitResult<Self::Output>;
+
+    fn template(&self) -> &Self::Template;
 }
 
 /// A renderer for file templates
@@ -63,6 +65,10 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
             .render(&self.template.name(), &self.var_context)
             .into_diagnostic()
             .map_err(|e| DevinitError::TemplateRenderError(format!("{:?}", e)))
+    }
+
+    fn template(&self) -> &Self::Template {
+        &self.template
     }
 }
 
@@ -111,5 +117,9 @@ impl<'a> Renderer<'a> for ProjectRenderer<'a> {
         }
 
         Ok(map)
+    }
+
+    fn template(&self) -> &Self::Template {
+        &self.template
     }
 }

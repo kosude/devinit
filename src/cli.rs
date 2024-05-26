@@ -75,6 +75,10 @@ pub struct OutputArgGroup {
     /// Print the processed template to stdout instead of to a file
     #[arg(short, long)]
     pub dry_run: bool,
+
+    /// Print the declared template variables instead of rendering at all
+    #[arg(long)]
+    pub list_vars: bool,
 }
 
 #[derive(Args, Debug)]
