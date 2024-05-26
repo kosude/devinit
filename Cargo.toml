@@ -12,6 +12,7 @@ lazy_static = "1.4.0"
 license = "3.3.1"
 log = "0.4.21"
 miette = { version = "7.2.0", features = ["fancy"] }
+path-clean = "1.0.1"
 serde = { version = "1.0.201", features = ["derive"] }
 serde_yaml = "0.9.34"
 tera = "1.19.1"

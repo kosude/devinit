@@ -6,9 +6,11 @@
  */
 
 use crate::error::{DevinitError, DevinitResult};
+use log::warn;
+use path_clean::PathClean;
 use serde::Deserialize;
 use std::{
-    fs,
+    env, fs,
     path::{Path, PathBuf},
 };
 
@@ -60,7 +62,22 @@ impl ConfigYamlBuilder {
                 .try_exists()
                 .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?
             {
-                return Ok(p.as_ref().to_path_buf());
+                // convert the user path to an absolute path (relative to cwd) if necessary
+                return Ok(if p.as_ref().is_absolute() {
+                    p.as_ref().to_path_buf()
+                } else {
+                    env::current_dir()
+                        .map_err(|_| {
+                            DevinitError::FileReadWriteError("Cwd not accessible".to_string())
+                        })?
+                        .join(p)
+                }
+                .clean());
+            } else {
+                warn!(
+                    "While the --config flag was specified, its path could not be read: {:?}\n",
+                    p.as_ref()
+                )
             }
         }
 
