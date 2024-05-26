@@ -1,0 +1,44 @@
+{
+    "name": "devinit-vsc",
+    "version": "0.3.1",
+    "preview": true,
+    "displayName": "Devinit for VS Code",
+    "description": "Quickly initialise files and folders with preconfigured boilerplate templates",
+    "repository": {
+        "type": "github",
+        "url": "https://github.com/kosude/devinit"
+    },
+    "bugs": {
+        "url": "https://github.com/kosude/devinit/issues"
+    },
+    "categories": [
+        "Other"
+    ],
+    "license": "MIT",
+    "publisher": "jack-bennett",
+    "private": true,
+    "main": "../../build/integration/vscode-ext/extension",
+    "activationEvents": [
+    ],
+    "contributes": {
+        "commands": [
+            {
+                "command": "devinit.render-template",
+                "title": "Devinit: Render template into current file"
+            }
+        ]
+    },
+    "engines": {
+        "vscode": "^1.76.0"
+    },
+    "scripts": {
+        "build": "node esbuild.mjs",
+        "package": "NODE_ENV=production npm run build"
+    },
+    "devDependencies": {
+        "@types/node": "^20.12.12",
+        "@types/vscode": "^1.89.0",
+        "esbuild": "^0.21.4",
+        "typescript": "^5.4.5"
+    }
+}
