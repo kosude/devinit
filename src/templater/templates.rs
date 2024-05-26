@@ -39,7 +39,6 @@ pub struct FileTemplate {
     ctx_ref: ContextArcMutex,
 
     name: String,
-    literal: String,
     source: String,
 }
 
@@ -71,7 +70,6 @@ impl<'a> Template<'a> for FileTemplate {
         Ok(Self {
             ctx_ref: ctx.clone(),
             name,
-            literal,
             source: path.as_ref().display().to_string(),
         })
     }
@@ -90,12 +88,6 @@ impl<'a> Template<'a> for FileTemplate {
 
     fn make_renderer(&'a self) -> DevinitResult<RendererVariant> {
         Ok(FileRenderer::new(&self)?)
-    }
-}
-
-impl FileTemplate {
-    pub fn literal(&self) -> &String {
-        &self.literal
     }
 }
 
