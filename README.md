@@ -23,6 +23,12 @@ $ devinit file --dry-run "EditorConfig"
 # Create and populate a folder called 'dotnet-project' from the project
 # template 'DotNet', specifying the variable 'projectName'.
 $ devinit project -p dotnet-project/ "DotNet" -DprojectName="Utils"
+
+# List all available templates on the system
+$ devinit list
+
+# List all variables found in the file template 'exampletpl' or its parents
+$ devinit file --list-vars "exampletpl"
 ```
 
 

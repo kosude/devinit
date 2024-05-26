@@ -1,0 +1,26 @@
+{% extends "base" %}
+
+{% macro input(label, type="text") %}
+    <!-- START OF INPUT MACRO -->
+    {{ varex }}
+    <label>
+        {{ label }}
+        <input type="{{type}}" />
+    </label>
+    <!-- END OF INPUT MACRO -->
+{% endmacro input %}
+
+{% block title %}{{ super() }} (Index){% endblock title %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock head %}
+{% block content %}
+    <h1>Index</h1>
+    <p class="important">
+      Welcome to my awesome homepage.
+    </p>
+    {{ self::input(label="Hello") }}
+{% endblock content %}

@@ -14,6 +14,9 @@ use tera::{
 
 /// Get all variables in the template with id `tpl_name` (and any templates in its 'include' tree) that do
 /// not have a matching 'set' block (i.e. are missing, unless specified with the -D cli flag)
+///
+/// NOTE: known issue - variables within a macro block are NOT included. This is just since I'd have to determine
+///       whether they're variables or macro arguments, which currently doesn't seem very straight-forward :/
 pub fn get_missing_template_vars<S: AsRef<str>>(
     context: ContextArcMutex,
     tpl_name: S,
@@ -38,30 +41,47 @@ pub fn get_missing_template_vars<S: AsRef<str>>(
         .collect())
 }
 
+/// Recursively flatten all children within the given node.
+fn flatten_node_children(node: &Node) -> Vec<&Node> {
+    let mut ret = vec![];
+
+    match node {
+        Node::Block(_, block, _) => {
+            for n in &block.body {
+                ret.append(&mut flatten_node_children(n))
+            }
+        }
+        _ => {
+            ret.push(node);
+        }
+    }
+
+    ret
+}
+
 /// Find the names of all variables referenced within a list of templates.
 /// This function relies on Tera's hidden API which are subject to breaking changes, so BE CAREFUL if/when
 /// migrating to a newer Tera version!
 fn get_variable_block_exprs<'a>(templates: &Vec<&'a Template>) -> DevinitResult<Vec<&'a String>> {
     // build vector of variables
     let mut vars = vec![];
+
+    // NOTE: this code looks seriously inefficient (3 nested 'for' loops AND recursion), and
+    //       definitely needs optimising at some point!!
     for tpl in templates {
-        vars.append(
-            &mut tpl
-                .ast
-                .iter()
-                .filter_map(|n| {
-                    if let Node::VariableBlock(_, expr) = n {
+        for node in tpl.ast.iter() {
+            let children_flat = flatten_node_children(node);
+            for node in children_flat {
+                match node {
+                    Node::VariableBlock(_, expr) => {
                         if let ExprVal::Ident(id) = &expr.val {
-                            Some(id)
-                        } else {
-                            None
+                            vars.push(id);
                         }
-                    } else {
-                        None
                     }
-                })
-                .collect(),
-        );
+                    _ => {}
+                }
+            }
+        }
     }
 
     Ok(vars)
@@ -103,24 +123,27 @@ fn get_templates_recursive<S: AsRef<str>>(
         .get(tpl_name.as_ref())
         .ok_or(DevinitError::IdNotFoundError(tpl_name.as_ref().to_string()))?;
 
-    // get include directives in template AST
-    let includes = template
+    // get any directives that import other templates (i.e. include, extends, ...)
+    let directives = template
         .ast
         .iter()
         .filter(|n| match n {
             Node::Include(_, _, _) => true,
+            Node::Extends(_, _) => true,
             _ => false,
         })
         .collect::<Vec<_>>();
 
     // build vector of templates
     let mut ret = vec![];
-    for incl in &includes {
+    for incl in &directives {
         if let Node::Include(_, ids, _) = incl {
             // `ids` is the list of template ids to check when including
             for id in ids {
                 ret.append(&mut get_templates_recursive(&tera, id)?)
             }
+        } else if let Node::Extends(_, id) = incl {
+            ret.append(&mut get_templates_recursive(&tera, id)?)
         }
     }
     ret.push(template);
