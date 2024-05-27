@@ -18,6 +18,10 @@ pub struct Cli {
     /// Specify path to the devinit configuration file
     #[arg(long)]
     pub config: Option<String>,
+
+    /// Format stdout output to be easier to parse programatically
+    #[arg(short, long)]
+    pub parsable: bool,
 }
 
 #[derive(Subcommand, Debug)]

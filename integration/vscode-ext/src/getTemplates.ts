@@ -5,6 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
+import { RunnerSubcommandVariant } from "./runner";
 import { RunnerState } from "./runnerState";
 
 /**
@@ -19,15 +20,20 @@ export interface FileTemplateDetail {
  * Invoke `devinit list` to retrieve a list of all file templates.
  * @return Array of all available file templates
  */
-export function getAllFileTemplates(runnerState: RunnerState): FileTemplateDetail[] {
-    return [
-        // {
-        //     name: "base",
-        //     source: "/home/jack/Developer/Utilities/devinit/examples/templates/file/base"
-        // },
-        // {
-        //     name: "python",
-        //     source: "/home/jack/Developer/Utilities/devinit/examples/templates/file/python"
-        // },
-    ];
+export async function getAllFileTemplates(runnerState: RunnerState): Promise<FileTemplateDetail[]> {
+    let stdout, stderr;
+    try {
+        ({stdout, stderr} = await runnerState
+            .buildRunner()
+            .setSubcommand(RunnerSubcommandVariant.List)
+            .run());
+    } catch (e) {
+        // most likely the config couldn't be found
+        return Promise.reject(e);
+    }
+
+    // stdout is in JSON format (because the --parsable option is passed to devinit)
+    const obj = JSON.parse(stdout);
+
+    return obj["file"];
 }

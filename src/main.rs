@@ -36,7 +36,7 @@ fn main() {
 
         // if the list subcommand is specified, then list them and return early.
         if let CommandVariant::List(_) = args.subcommand {
-            list_templates(&template_set);
+            list_templates(&template_set, args.parsable);
             return Ok(());
         }
 
@@ -76,7 +76,7 @@ fn main() {
         // if the --list-vars option is provided, list them and return early
         if output_conf.list_vars {
             // only list variables that are still undefined
-            list_variables(&undefined_vars);
+            list_variables(&undefined_vars, args.parsable);
             return Ok(());
         }
 
@@ -193,42 +193,91 @@ fn render<S: AsRef<str>>(
 }
 
 /// Print a pretty-formatted list of templates available on the system.
-fn list_templates(templates: &TemplateSet) {
+fn list_templates(templates: &TemplateSet, parsable: bool) {
     // function to print a single list item (template)
-    fn print_tpl_brief<'a, T: Template<'a>>(t: &&T) {
-        println!(
-            "  - {} {}",
-            t.name().green().bold(),
-            format!("({})", t.source()).dimmed()
-        );
+    fn print_tpl_brief<'a, T: Template<'a>>(t: &&T, parsable: bool, add_comma: bool) {
+        if parsable {
+            // JSON format
+            print!(
+                "{{\"name\":\"{}\",\"source\":\"{}\"}}{}",
+                t.name(),
+                t.source(),
+                if add_comma { "," } else { "" }
+            );
+        } else {
+            println!(
+                "  - {} {}",
+                t.name().green().bold(),
+                format!("({})", t.source()).dimmed()
+            );
+        }
     }
 
     let ft = templates.get_file_templates_all();
     let pt = templates.get_project_templates_all();
 
-    println!("{}", "File templates:".bold());
+    let mut i = 0;
+
+    // start of file templates
+    if parsable {
+        print!("{{\"file\":[");
+    } else {
+        println!("{}", "File templates:".bold());
+    }
     if ft.len() > 0 {
         for t in &ft {
-            print_tpl_brief(t);
+            print_tpl_brief(t, parsable, i < (ft.len() - 1));
+            i += 1;
         }
     } else {
-        println!("{}", "  No file templates found".red());
+        if !parsable {
+            println!("{}", "  No file templates found".red());
+        }
     }
 
-    println!("{}", "Project templates:".bold());
+    i = 0;
+
+    // start of project templates
+    if parsable {
+        print!("],\"project\":[");
+    } else {
+        println!("{}", "Project templates:".bold());
+    }
     if pt.len() > 0 {
         for t in &pt {
-            print_tpl_brief(t);
+            print_tpl_brief(t, parsable, i < (pt.len() - 1));
+            i += 1;
         }
     } else {
-        println!("{}", "  No project templates found".red());
+        if !parsable {
+            println!("{}", "  No project templates found".red());
+        }
+    }
+
+    if parsable {
+        println!("]}}");
     }
 }
 
 /// Print a pretty-formatted list of variables (i.e. where they must be defined in order to render a template)
-fn list_variables(variables: &Vec<String>) {
-    println!("{}", "Remaining variables:".bold());
-    for var in variables {
-        println!("  - {}", var.blue().bold());
+fn list_variables(variables: &Vec<String>, parsable: bool) {
+    if parsable {
+        let mut i = 0;
+
+        print!("[");
+        for var in variables {
+            print!(
+                "\"{}\"{}",
+                var,
+                if i < (variables.len() - 1) { "," } else { "" }
+            );
+            i += 1;
+        }
+        println!("]");
+    } else {
+        println!("{}", "Remaining variables:".bold());
+        for var in variables {
+            println!("  - {}", var.blue().bold());
+        }
     }
 }

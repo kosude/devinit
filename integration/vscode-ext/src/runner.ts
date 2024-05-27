@@ -6,6 +6,7 @@
  */
 
 import * as child_process from "node:child_process";
+import * as util from "node:util";
 
 /**
  * Variants of devinit subcommands
@@ -34,28 +35,11 @@ export class Runner {
      * `then` is run after a succesful execution completes, otherwise `err` is run instead.
      * @returns The executed command as a verbatim string, for diagnostics
      */
-    public run(
-        then?: (stdout: string, stderr: string) => void,
-        err?: (reason: string) => void
-    ): string {
-        let cmd = `"${this.execPath}" ${this.buildArgs().join(" ")}`;
+    public run(): Promise<{ stdout: string, stderr: string }> {
+        const cmd = `"${this.execPath}" ${this.buildArgs().join(" ")}`;
+        const exec = util.promisify(child_process.exec);
 
-        child_process.exec(
-            cmd,
-            (error, stdout, stderr) => {
-                if (error !== null) {
-                    if (err !== undefined) {
-                        err(error.message);
-                    }
-                } else {
-                    if (then !== undefined) {
-                        then(stdout, stderr);
-                    }
-                }
-            }
-        );
-
-        return cmd;
+        return exec(cmd);
     }
 
     /**
@@ -68,6 +52,8 @@ export class Runner {
         if (this.configPath !== undefined) {
             args.push(`--config="${this.configPath}"`);
         }
+
+        args.push("--parsable");
 
         args.push(this.subcmdVariant);
 
