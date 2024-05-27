@@ -1,11 +1,10 @@
-BUILD_DIR := $(shell "pwd")/build
 SRC_DIR := $(shell "pwd")
+TARGET_DIR := $(shell "pwd")/target
 
 PROJECT_VERS := $(shell "$(SRC_DIR)/util/version.sh" --short)
 
 CARGO := cargo
-CARGOCHAN := +nightly
-CARGOFLAGS := -Zunstable-options
+CARGOFLAGS :=
 CARGO_TOML := $(SRC_DIR)/Cargo.toml
 
 NPM := npm
@@ -61,11 +60,8 @@ endif
 #
 # All targets
 #
-all: devinit
+all: devinit vscode_ext
 
-
-$(BUILD_DIR):
-	mkdir -p $(BUILD_DIR)
 
 #
 # Compile the devinit executable
@@ -73,7 +69,7 @@ $(BUILD_DIR):
 
 devinit: $(CARGO_TOML) | validate_cargo
 	DEVINITVERS=$(PROJECT_VERS) \
-	$(CARGO) $(CARGOCHAN) build $(CARGOFLAGS) --manifest-path=$(CARGO_TOML) --target-dir=$(BUILD_DIR)/_$@ --out-dir=$(BUILD_DIR)
+	$(CARGO) build $(CARGOFLAGS) --manifest-path=$(CARGO_TOML)
 
 #
 # Bundle the VS Code extension
@@ -98,4 +94,6 @@ endif
 #
 
 clean:
-	rm -r $(BUILD_DIR)
+	rm -rf $(TARGET_DIR)
+	rm -rf $(VSCODE_EXT_DIST_DIR)
+	rm -rf $(VSCODE_EXT_PREFIX)/LICENSE
