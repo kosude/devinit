@@ -1,5 +1,9 @@
 build/
 target/
 
+examples/
+
 *.md
 *.svg
+
+*.json

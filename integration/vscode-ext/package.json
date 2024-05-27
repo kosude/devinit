@@ -25,7 +25,24 @@
                 "command": "devinit.render-template",
                 "title": "Devinit: Render template into current file"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "Devinit",
+            "properties": {
+                "devinit.environment.executablePath": {
+                    "markdownDescription": "Specifies the path to the `devinit` executable; leave empty to read from PATH.",
+                    "type": "string",
+                    "default": "",
+                    "order": 0
+                },
+                "devinit.environment.configurationFile": {
+                    "markdownDescription": "Specifies the path to the configuration file (i.e. the `devinitrc.yml` file by default); leave empty to use system default locations. These locations include:\n- `$HOME/.devinit/devinitrc.yml`\n- `$HOME/.config/devinit/devinitrc.yml`.",
+                    "type": "string",
+                    "default": "",
+                    "order": 0
+                }
+            }
+        }
     },
     "engines": {
         "vscode": "^1.76.0"

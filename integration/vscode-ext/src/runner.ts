@@ -35,8 +35,8 @@ export class Runner {
      * @returns The executed command as a verbatim string, for diagnostics
      */
     public run(
-        then: (stdout: string, stderr: string) => void,
-        err: (reason: string) => void
+        then?: (stdout: string, stderr: string) => void,
+        err?: (reason: string) => void
     ): string {
         let cmd = `"${this.execPath}" ${this.buildArgs().join(" ")}`;
 
@@ -44,9 +44,13 @@ export class Runner {
             cmd,
             (error, stdout, stderr) => {
                 if (error !== null) {
-                    err(error.message);
+                    if (err !== undefined) {
+                        err(error.message);
+                    }
                 } else {
-                    then(stdout, stderr);
+                    if (then !== undefined) {
+                        then(stdout, stderr);
+                    }
                 }
             }
         );
