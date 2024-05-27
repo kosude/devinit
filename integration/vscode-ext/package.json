@@ -22,8 +22,8 @@
     "contributes": {
         "commands": [
             {
-                "command": "devinit.render-template",
-                "title": "Devinit: Render template into current file"
+                "command": "devinit.render-file-template",
+                "title": "Devinit: Render a file template into the current file"
             }
         ],
         "configuration": {

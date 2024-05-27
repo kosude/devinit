@@ -7,6 +7,7 @@
 
 import * as vscode from "vscode";
 import { RunnerState } from "./runnerState";
+import * as commands from "./commands";
 
 /**
  * Static extension activation set-up function
@@ -20,8 +21,9 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("devinit.render-template", () => {
-            console.log(runnerState.buildRunner().run());
+        vscode.commands.registerCommand("devinit.render-file-template", () => commands.renderFileTemplate(runnerState))
+        // () => {
+          //  console.log(runnerState.);
 
 
             // let runner = new Runner()
@@ -57,6 +59,6 @@ export async function activate(context: vscode.ExtensionContext) {
             //         vscode.window.showErrorMessage(`${error}`);
             //     })
             // );
-        }),
+        // }),
     );
 }
