@@ -36,10 +36,8 @@ export class Runner {
      * @returns The executed command as a verbatim string, for diagnostics
      */
     public run(): Promise<{ stdout: string, stderr: string }> {
-        const cmd = `"${this.execPath}" ${this.buildArgs().join(" ")}`;
         const exec = util.promisify(child_process.exec);
-
-        return exec(cmd);
+        return exec(`"${this.execPath}" ${this.buildArgs().join(" ")}`);
     }
 
     /**
@@ -136,8 +134,12 @@ export class Runner {
      *  - `subcmdVariant` is **not** equal to `RunnerSubcommandVariant.List`
      */
     private variables: Map<string, string> = new Map<string, string>();
-    public setVariable(id: string, val: string) {
+    public setVariable(id: string, val: string): Runner {
         this.variables.set(id, val);
+        return this;
+    }
+    public setVariableMap(map: Map<string, string>): Runner {
+        this.variables = map;
         return this;
     }
 

@@ -5,11 +5,12 @@
  *   See the LICENCE file for more information.
  */
 
-import { RunnerSubcommandVariant } from "./runner";
+import { RunnerOutputType, RunnerSubcommandVariant } from "./runner";
 import { RunnerState } from "./runnerState";
 
 /**
  * Definition of an object containing details about a retrieved file template.
+ * This is expected to be in the same format as what `devinit --parsable` provides.
  */
 export interface FileTemplateDetail {
     name: string,
@@ -20,7 +21,7 @@ export interface FileTemplateDetail {
  * Invoke `devinit list` to retrieve a list of all file templates.
  * @return Array of all available file templates
  */
-export async function getAllFileTemplates(runnerState: RunnerState): Promise<FileTemplateDetail[]> {
+export async function getAllFileTemplatesCli(runnerState: RunnerState): Promise<FileTemplateDetail[]> {
     let stdout, stderr;
     try {
         ({stdout, stderr} = await runnerState
