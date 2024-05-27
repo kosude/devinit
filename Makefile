@@ -83,9 +83,10 @@ vscode_ext: | validate_npm $(VSCODE_EXT_PREFIX)/node_modules
 
 ifneq "$(DEBUG)" "1"
 	cp $(SRC_DIR)/LICENCE $(VSCODE_EXT_PREFIX)/LICENSE
+	cp $(SRC_DIR)/resources/icon.png $(VSCODE_EXT_DIST_DIR)/icon.png
 
 	cd $(VSCODE_EXT_PREFIX) && \
-	$(VSCE) package --out=$(VSCODE_EXT_DIST_DIR) --readme-path=$(SRC_DIR)/README.md
+	$(VSCE) package --out=$(VSCODE_EXT_DIST_DIR)
 endif
 
 

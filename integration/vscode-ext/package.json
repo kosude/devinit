@@ -2,6 +2,7 @@
     "name": "devinit-vsc",
     "version": "0.3.1",
     "preview": true,
+    "icon": "dist/icon.png",
     "displayName": "Devinit for VS Code",
     "description": "Quickly initialise files and folders with preconfigured boilerplate templates",
     "repository": {
