@@ -18,8 +18,7 @@
     "publisher": "jack-bennett",
     "private": true,
     "main": "../../build/integration/vscode-ext/extension",
-    "activationEvents": [
-    ],
+    "activationEvents": [],
     "contributes": {
         "commands": [
             {
@@ -36,9 +35,13 @@
         "package": "NODE_ENV=production npm run build"
     },
     "devDependencies": {
+        "@eslint/js": "^9.3.0",
+        "@stylistic/eslint-plugin": "^2.1.0",
         "@types/node": "^20.12.12",
         "@types/vscode": "^1.89.0",
         "esbuild": "^0.21.4",
-        "typescript": "^5.4.5"
+        "eslint": "^8.57.0",
+        "typescript": "^5.4.5",
+        "typescript-eslint": "^7.10.0"
     }
 }
