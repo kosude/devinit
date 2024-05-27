@@ -17,13 +17,13 @@
     "license": "MIT",
     "publisher": "jack-bennett",
     "private": true,
-    "main": "../../build/integration/vscode-ext/extension",
+    "main": "dist/extension",
     "activationEvents": [],
     "contributes": {
         "commands": [
             {
                 "command": "devinit.render-file-template",
-                "title": "Devinit: Render a file template into the current file"
+                "title": "Devinit: Render file template into current file"
             }
         ],
         "configuration": {
@@ -45,20 +45,16 @@
         }
     },
     "engines": {
-        "vscode": "^1.76.0"
+        "vscode": "^1.88.0"
     },
     "scripts": {
-        "build": "node esbuild.mjs",
-        "package": "NODE_ENV=production npm run build"
+        "build:dev": "node esbuild.mjs",
+        "build:prod": "NODE_ENV=production npm run build:dev"
     },
     "devDependencies": {
-        "@eslint/js": "^9.3.0",
-        "@stylistic/eslint-plugin": "^2.1.0",
         "@types/node": "^20.12.12",
-        "@types/vscode": "^1.89.0",
+        "@types/vscode": "^1.88.0",
         "esbuild": "^0.21.4",
-        "eslint": "^8.57.0",
-        "typescript": "^5.4.5",
-        "typescript-eslint": "^7.10.0"
+        "typescript": "^5.4.5"
     }
 }

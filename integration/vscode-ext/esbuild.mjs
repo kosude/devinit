@@ -7,10 +7,8 @@
 
 import esbuild from "esbuild";
 
-const buildDir = process.env["JS_BUILD_DIR"];
+const buildDir = "dist";
 const isProd = process.env["NODE_ENV"] === "production";
-
-console.log(buildDir)
 
 const configBase = {
     bundle: true,
