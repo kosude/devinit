@@ -2,6 +2,7 @@ SRC_DIR := $(shell "pwd")
 TARGET_DIR := $(shell "pwd")/target
 
 PROJECT_VERS := $(shell "$(SRC_DIR)/util/version.sh" --short)
+PROJECT_VERS_NO_COMMITN := $(shell "$(SRC_DIR)/util/version.sh" --short --no-commitn) # necessary for extension packaging
 
 CARGO := cargo
 CARGOFLAGS :=
@@ -11,6 +12,8 @@ NPM := npm
 NODE := node
 VSCE := vsce
 
+VSCE_SUBCOMMAND := package
+VSCE_FLAGS := --no-update-package-json --no-git-tag-version
 VSCODE_EXT_PREFIX := $(SRC_DIR)/integration/vscode-ext
 VSCODE_EXT_NPM_SCRIPT := build:dev
 VSCODE_EXT_DIST_DIR := $(VSCODE_EXT_PREFIX)/dist
@@ -45,12 +48,18 @@ validate_vsce:
 		$(error vsce not found in PATH, but is required to build the devinit VS Code extension))
 
 # run with DEBUG=1 to use debug configuration
-
 ifneq "$(DEBUG)" "1"
 CARGOFLAGS += --release
 VSCODE_EXT_NPM_SCRIPT = build:prod
 
 vscode_ext: | validate_vsce
+endif
+
+# use EXT_PUBLISH=1 to publish extensions to relevant marketplaces
+ifeq "$(EXT_PUBLISH)" "1"
+VSCE_SUBCOMMAND = publish
+else
+VSCE_FLAGS += --out=$(VSCODE_EXT_DIST_DIR)
 endif
 
 .PHONY: devinit vscode_ext
@@ -86,7 +95,7 @@ ifneq "$(DEBUG)" "1"
 	cp $(SRC_DIR)/resources/icon.png $(VSCODE_EXT_DIST_DIR)/icon.png
 
 	cd $(VSCODE_EXT_PREFIX) && \
-	$(VSCE) package --out=$(VSCODE_EXT_DIST_DIR) --no-update-package-json --no-git-tag-version $(subst v,,$(PROJECT_VERS))
+	$(VSCE) $(VSCE_SUBCOMMAND) $(VSCE_FLAGS) $(subst v,,$(PROJECT_VERS_NO_COMMITN))
 endif
 
 
