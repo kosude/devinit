@@ -41,6 +41,15 @@
                     "type": "string",
                     "default": "",
                     "order": 0
+                },
+                "devinit.automation.templateAssociations": {
+                    "markdownDescription": "Provides a map of templates associated with files, matched by [glob patterns](https://code.visualstudio.com/docs/editor/glob-patterns). When a file is created that matches one of these patterns, the associated template is rendered into it.\n\nFile patterns are expected in the 'Item' column; template names are expected in the 'Value' column.\n\nE.g. `*.h`: `headerTemplate`",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "default": "",
+                    "order": 0
                 }
             }
         }
