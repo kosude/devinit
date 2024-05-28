@@ -14,6 +14,13 @@ import { renderFileTemplateCli, renderTemplateListVariablesCli } from "./templat
  * Render a template into the current file
  */
 export async function renderFileTemplate(runnerState: RunnerState) {
+    // get active document path (to render to)
+    const activePath = getCurrentFilePath();
+    if (activePath === undefined) {
+        vscode.window.showErrorMessage("No text editor is currently active");
+        return;
+    }
+
     // query devinit for available templates
     let availableTemplates;
     try {
@@ -62,13 +69,6 @@ export async function renderFileTemplate(runnerState: RunnerState) {
             return;
         }
         definedVariables.set(ident, value);
-    }
-
-    // get active document path (to render to)
-    const activePath = getCurrentFilePath();
-    if (activePath === undefined) {
-        vscode.window.showErrorMessage("No text editor is currently active");
-        return;
     }
 
     // attempt to render
