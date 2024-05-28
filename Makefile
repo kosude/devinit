@@ -86,7 +86,7 @@ ifneq "$(DEBUG)" "1"
 	cp $(SRC_DIR)/resources/icon.png $(VSCODE_EXT_DIST_DIR)/icon.png
 
 	cd $(VSCODE_EXT_PREFIX) && \
-	$(VSCE) package --out=$(VSCODE_EXT_DIST_DIR)
+	$(VSCE) package --out=$(VSCODE_EXT_DIST_DIR) --no-update-package-json --no-git-tag-version $(subst v,,$(PROJECT_VERS))
 endif
 
 
