@@ -26,7 +26,11 @@
         "commands": [
             {
                 "command": "devinit.render-file-template",
-                "title": "Devinit: Render file template into current file"
+                "title": "Devinit: Template current file"
+            },
+            {
+                "command": "devinit.render-file-template-no-defaults",
+                "title": "Devinit: Template current file (ignoring default variable values)"
             }
         ],
         "configuration": {
@@ -42,7 +46,7 @@
                     "markdownDescription": "Specifies the path to the configuration file (i.e. the `devinitrc.yml` file by default); leave empty to use system default locations. These locations include:\n- `$HOME/.devinit/devinitrc.yml`\n- `$HOME/.config/devinit/devinitrc.yml`.",
                     "type": "string",
                     "default": "",
-                    "order": 0
+                    "order": 1
                 },
                 "devinit.automation.templateAssociations": {
                     "markdownDescription": "Provides a map of templates associated with files, matched by [glob patterns](https://code.visualstudio.com/docs/editor/glob-patterns). When a file is created that matches one of these patterns, the associated template is rendered into it.\n\nFile patterns are expected in the 'Item' column; template names are expected in the 'Value' column.\n\nE.g. `*.h`: `headerTemplate`",
@@ -51,7 +55,19 @@
                         "type": "string"
                     },
                     "default": "",
-                    "order": 0
+                    "order": 2
+                },
+                "devinit.automation.defaultTemplateVariables": {
+                    "markdownDescription": "Provides a map of default variable values for each template. When a template found in this list is rendered, any default variables specified for it here will be automatically used, without displaying a prompt. Variables without a default value will continue to be prompted for.",
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        }
+                    },
+                    "default": "",
+                    "order": 3
                 }
             }
         }

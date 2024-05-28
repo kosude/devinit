@@ -13,7 +13,7 @@ import { renderFileTemplatePrompted } from "./templateRender";
 /**
  * Render a template into the current file
  */
-export async function renderFileTemplate(runnerState: RunnerState) {
+export async function renderFileTemplate(runnerState: RunnerState, skipDefaults?: boolean) {
     // get active document path (to render to)
     const activePath = getCurrentFilePath();
     if (activePath === undefined) {
@@ -53,7 +53,8 @@ export async function renderFileTemplate(runnerState: RunnerState) {
         await renderFileTemplatePrompted(
             runnerState,
             templateName.label,
-            activePath
+            activePath,
+            skipDefaults ?? false
         );
     } catch (e) {
         if (e !== "Input cancelled") {

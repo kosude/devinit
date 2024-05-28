@@ -18,11 +18,6 @@ export class Automator {
     private readonly runnerState: RunnerState;
 
     /**
-     * Map of template names indexed by filename globs.
-     */
-    private templateAssociations!: Map<string, string>;
-
-    /**
      * Array of FS watchers to listen to workspace file events
      */
     private watchers!: vscode.FileSystemWatcher[];
@@ -41,8 +36,6 @@ export class Automator {
      * This should be done when config changes (via listening to `vscode.workspace.onDidChangeConfiguration()`)
      */
     public updateUserConfigProperties() {
-        this.templateAssociations = userConfig.getTemplateAssociations();
-
         // dispose previous watchers
         if (this.watchers !== undefined) {
             this.watchers.forEach((w) => w.dispose());
@@ -50,10 +43,12 @@ export class Automator {
 
         // create watchers for each association
         this.watchers = [];
-        Object.entries(this.templateAssociations).forEach(([pat, tpl]) =>  {
+        Object.entries(userConfig.getTemplateAssociations()).forEach(([pat, tpl]) =>  {
             let w = vscode.workspace.createFileSystemWatcher(`**/${pat}`);
             w.onDidCreate(
-                async (uri) => await this.onFileCreated(uri, tpl)
+                async (uri) => {
+                    await this.onFileCreated(uri, tpl);
+                }
             );
 
             this.watchers.push(w);
@@ -70,7 +65,8 @@ export class Automator {
             await renderFileTemplatePrompted(
                 this.runnerState,
                 templateName,
-                uri.fsPath
+                uri.fsPath,
+                false
             );
         } catch (e) {
             if (e !== "Input cancelled") {

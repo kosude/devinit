@@ -6,6 +6,7 @@
  */
 
 import * as vscode from "vscode";
+import * as userConfig  from "./userConfig";
 import { RunnerOutputType, RunnerSubcommandVariant } from "./runner";
 import { RunnerState } from "./runnerState";
 
@@ -18,12 +19,18 @@ export async function renderFileTemplatePrompted(
     runnerState: RunnerState,
     templateName: string,
     outputPath: string,
-    knownVariables?: Map<string, string> | undefined
+    skipDefaults: boolean
 ): Promise<{stdout: string, stderr: string}> {
+    // get user-set default variables for this template
+    const defaultVariablesUntyped = userConfig.getDefaultVariableMaps().get(templateName);
+    const defaultVariablesMap = (!skipDefaults && defaultVariablesUntyped !== undefined)
+        ? new Map(Object.entries(defaultVariablesUntyped!))
+        : new Map();
+
     // query devinit for remaining needed variables in template `templateName`
     let remainingVariables: string[];
     try {
-        remainingVariables = await listFileTemplateVars(runnerState, templateName, knownVariables);
+        remainingVariables = await listFileTemplateVars(runnerState, templateName, defaultVariablesMap);
     } catch (e) {
         return Promise.reject(e);
     }
@@ -42,13 +49,11 @@ export async function renderFileTemplatePrompted(
         definedVariables.set(ident, value);
     }
 
-    console.log(definedVariables);
-
     return renderFileTemplate(
         runnerState,
         templateName,
         outputPath,
-        new Map([...definedVariables, ...(knownVariables ?? new Map())]));
+        new Map([...definedVariables, ...defaultVariablesMap]));
 }
 
 /**
@@ -77,7 +82,7 @@ async function renderFileTemplate(
 async function listFileTemplateVars(
     runnerState: RunnerState,
     templateName: string,
-    knownVariables?: Map<string, string> | undefined
+    knownVariables: Map<string, string>
 ): Promise<string[]> {
     let stdout, stderr;
     try {
@@ -86,7 +91,7 @@ async function listFileTemplateVars(
             .setSubcommand(RunnerSubcommandVariant.File)
             .setOutputType(RunnerOutputType.ListVars)
             .setTemplateName(templateName)
-            .setVariableMap(knownVariables ?? new Map())
+            .setVariableMap(knownVariables)
             .run());
     } catch (e) {
         // most likely the config couldn't be found

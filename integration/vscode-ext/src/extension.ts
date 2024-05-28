@@ -28,6 +28,13 @@ export async function activate(context: vscode.ExtensionContext) {
     });
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("devinit.render-file-template", () => commands.renderFileTemplate(runnerState))
+        vscode.commands.registerCommand(
+            "devinit.render-file-template",
+            () => commands.renderFileTemplate(runnerState)
+        ),
+        vscode.commands.registerCommand(
+            "devinit.render-file-template-no-defaults",
+            () => commands.renderFileTemplate(runnerState, true)
+        ),
     );
 }
