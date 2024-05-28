@@ -19,7 +19,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const runnerState = new RunnerState();
 
     // automation state for file system watching
-    const automator = new Automator();
+    const automator = new Automator(runnerState);
 
     // update config-based state when user configuration changes
     vscode.workspace.onDidChangeConfiguration(_ => {

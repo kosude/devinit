@@ -5,9 +5,13 @@
 Devinit is a command-line utility written in Rust that provides the ability to write templates for files and projects and interactively apply them to
 make boilerplate less annoying.
 
-See the `examples` directory for examples of writing file and project templates.
+See the `examples/` directory for examples of writing file and project templates.
 
 A tracker for planned features can be found on [Trello](https://trello.com/b/QkX7i1P1/devinit).
+
+> [!NOTE]
+> If you use VS Code, official Devinit integration is available via the extension on the 
+> [marketplace](https://marketplace.visualstudio.com/items?itemName=jack-bennett.devinit-vsc).
 
 
 ## Command-line usage examples

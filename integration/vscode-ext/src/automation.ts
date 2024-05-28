@@ -7,12 +7,16 @@
 
 import * as vscode from "vscode";
 import * as userConfig  from "./userConfig";
+import { renderFileTemplatePrompted } from "./templateRender";
+import { RunnerState } from "./runnerState";
 
 /**
  * Class to handle automation of template expansion and rendering (e.g. autoamtically rendering associated
  * templates into new files)
  */
 export class Automator {
+    private readonly runnerState: RunnerState;
+
     /**
      * Map of template names indexed by filename globs.
      */
@@ -26,7 +30,9 @@ export class Automator {
     /**
      * Initialise the automator (automation state) object
      */
-    public constructor() {
+    public constructor(runnerState: RunnerState) {
+        this.runnerState = runnerState;
+
         this.updateUserConfigProperties();
     }
 
@@ -47,7 +53,7 @@ export class Automator {
         Object.entries(this.templateAssociations).forEach(([pat, tpl]) =>  {
             let w = vscode.workspace.createFileSystemWatcher(`**/${pat}`);
             w.onDidCreate(
-                (uri) => this.onFileCreated(uri, tpl)
+                async (uri) => await this.onFileCreated(uri, tpl)
             );
 
             this.watchers.push(w);
@@ -59,8 +65,18 @@ export class Automator {
      * @param uri File path
      * @param templateName Associated template name
      */
-    private onFileCreated(uri: vscode.Uri, templateName: string) {
-        // TODO: render the template into the new file
-        console.log(`Created ${uri}: using template "${templateName}"`);
+    private async onFileCreated(uri: vscode.Uri, templateName: string) {
+        try {
+            await renderFileTemplatePrompted(
+                this.runnerState,
+                templateName,
+                uri.fsPath
+            );
+        } catch (e) {
+            if (e !== "Input cancelled") {
+                // TODO: implement --parsable version of errors in the devinit CLI, and then parse it and print it here for better readability.
+                vscode.window.showErrorMessage(`Error when rendering template \"${templateName}\": ${e}`);
+            }
+        }
     }
 }

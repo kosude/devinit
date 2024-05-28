@@ -8,7 +8,7 @@
 import * as vscode from "vscode";
 import { RunnerState } from "./runnerState";
 import { getAllFileTemplatesCli } from "./templateGet";
-import { renderFileTemplateCli, renderTemplateListVariablesCli } from "./templateRender";
+import { renderFileTemplatePrompted } from "./templateRender";
 
 /**
  * Render a template into the current file
@@ -26,7 +26,7 @@ export async function renderFileTemplate(runnerState: RunnerState) {
     try {
         availableTemplates = await getAllFileTemplatesCli(runnerState);
     } catch (e) {
-        vscode.window.showErrorMessage(String(e))
+        vscode.window.showErrorMessage(String(e));
         return;
     }
 
@@ -48,40 +48,18 @@ export async function renderFileTemplate(runnerState: RunnerState) {
         return;
     }
 
-    // query devinit for remaining needed variables in template `templateName`
-    let remainingVariables;
-    try {
-        remainingVariables = await renderTemplateListVariablesCli(runnerState, templateName.label);
-    } catch (e) {
-        vscode.window.showErrorMessage(String(e))
-        return;
-    }
-
-    // query the user to specify each variable as necessary
-    let definedVariables = new Map<string, string>();
-    for (const ident of remainingVariables) {
-        const value = await vscode.window.showInputBox({
-            title: `Define template variable \"${ident}\"`,
-            placeHolder: `What is \"${ident}\" equal to?`
-        });
-        // early return if any variables are skipped (i.e. input cancelled)
-        if (value === undefined) {
-            return;
-        }
-        definedVariables.set(ident, value);
-    }
-
     // attempt to render
     try {
-        await renderFileTemplateCli(
+        await renderFileTemplatePrompted(
             runnerState,
             templateName.label,
-            activePath,
-            definedVariables
+            activePath
         );
     } catch (e) {
-        // TODO: implement --parsable version of errors in the devinit CLI, and then parse it and print it here for better readability.
-        vscode.window.showErrorMessage(`Error when rendering template \"${templateName.label}\": ${e}`);
+        if (e !== "Input cancelled") {
+            // TODO: implement --parsable version of errors in the devinit CLI, and then parse it and print it here for better readability.
+            vscode.window.showErrorMessage(`Error when rendering template \"${templateName.label}\": ${e}`);
+        }
     }
 }
 
