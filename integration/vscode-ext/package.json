@@ -19,7 +19,9 @@
     "publisher": "jack-bennett",
     "private": true,
     "main": "dist/extension",
-    "activationEvents": [],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
     "contributes": {
         "commands": [
             {
