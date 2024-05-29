@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path};
 
 use colored::{ColoredString, Colorize};
 
@@ -25,7 +25,12 @@ pub fn print_file_render<S: AsRef<str>>(name: S, render: S) {
 }
 
 pub fn print_project_render<S: AsRef<str>>(outputs: HashMap<S, S>) {
-    for (output, render) in &outputs {
+    // sort outputs by their path, first by alphabetical order and then by folders first
+    let mut vec = outputs.into_iter().collect::<Vec<_>>();
+    vec.sort_by_key(|p| p.0.as_ref().to_owned());
+    vec.sort_by_key(|p| !p.0.as_ref().contains(path::is_separator));
+
+    for (output, render) in &vec {
         let (prefix, fname) = if let Some(pos) = output.as_ref().rfind("/") {
             (&output.as_ref()[..(pos + 1)], &output.as_ref()[(pos + 1)..])
         } else {

@@ -18,5 +18,5 @@ pub mod fn_decls;
 mod renderer;
 pub use renderer::*;
 
-mod templates;
-pub use templates::*;
+mod tpl_objects;
+pub use tpl_objects::*;

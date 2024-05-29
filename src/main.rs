@@ -213,8 +213,10 @@ fn list_templates(templates: &TemplateSet, parsable: bool) {
         }
     }
 
-    let ft = templates.get_file_templates_all();
-    let pt = templates.get_project_templates_all();
+    let mut ft = templates.get_file_templates_all();
+    ft.sort();
+    let mut pt = templates.get_project_templates_all();
+    pt.sort();
 
     let mut i = 0;
 
