@@ -10,8 +10,18 @@ use cli::{Cli, CommandVariant, OutputArgGroup};
 use colored::Colorize;
 use error::{DevinitError, DevinitResult};
 use files::{ConfigYaml, ConfigYamlBuilder};
-use std::{collections::HashMap, fs, path::PathBuf, process::exit};
-use templater::{get_missing_template_vars, RendererVariant, Template, TemplateSet};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fs,
+    io::ErrorKind,
+    path::{Path, PathBuf},
+    process::exit,
+};
+use templater::{
+    get_missing_template_vars, BuiltinVariables, RendererVariant, Template, TemplateSet,
+    BUILTIN_VARIABLES_IDENT,
+};
 
 use crate::templater::Renderer;
 
@@ -138,9 +148,18 @@ fn render<S: AsRef<str>>(
     var_map: &HashMap<S, S>,
     output: &OutputArgGroup,
 ) -> DevinitResult<()> {
+    let mut builtins = BuiltinVariables::default();
+
     match renderer {
         // a file template was specified (devinit file)...
         RendererVariant::File(ref mut f) => {
+            // set up built-in variables if using --path=<p>
+            if let Some(p) = &output.path {
+                (builtins.file_name, builtins.file_contents) =
+                    get_filename_filecontents_pair(Path::new(p))?;
+            }
+            f.set_builtin_variables(&builtins);
+
             // add user state (CLI-defined variables)
             for (k, v) in var_map {
                 f.add_variable(k, v);
@@ -159,6 +178,10 @@ fn render<S: AsRef<str>>(
         }
         // a project template was specified (devinit project)...
         RendererVariant::Project(ref mut p) => {
+            // TODO: builtin variables for project templates
+            //       note that path-specific builtins are a pain because we have to process them all for each
+            //       output file *before* rendering.
+
             // add user state (CLI-defined variables)
             for (k, v) in var_map {
                 p.add_variable(k, v);
@@ -282,4 +305,31 @@ fn list_variables(variables: &Vec<String>, parsable: bool) {
             println!("  - {}", var.blue().bold());
         }
     }
+}
+
+/// Return the filename and file contents (if the path exists - otherwise empty str) of the given path.
+/// This is intended to be used to retrieve file-related contents for the BUILTIN variables.
+fn get_filename_filecontents_pair<P: AsRef<Path>>(path: P) -> DevinitResult<(String, String)> {
+    Ok((
+        path.as_ref()
+            .file_name()
+            .unwrap_or(OsStr::new(""))
+            .to_str()
+            .ok_or(DevinitError::FileReadWriteError(
+                "File path is not valid UTF-8".to_string(),
+            ))?
+            .to_owned(),
+        match fs::read_to_string(&path) {
+            Ok(c) => c,
+            Err(e) => {
+                if e.kind() == ErrorKind::NotFound {
+                    String::from("")
+                } else {
+                    return Err(DevinitError::FileReadWriteError(format!(
+                        "When attempting to read to {BUILTIN_VARIABLES_IDENT}.file_contents: {e}",
+                    )));
+                }
+            }
+        },
+    ))
 }

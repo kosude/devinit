@@ -3,3 +3,7 @@
 {% set end = " */" -%}
 
 {% include "copyright" %}
+
+{{ BUILTIN.file_contents }}
+
+// Post-contents example text

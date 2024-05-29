@@ -1,9 +1,3 @@
 files:
-    .folder/FirstFile.txt: FirstFile.txt
-    foo/baz/SecondFile.py: SecondFile.py
-    .env.js: .env.js
-    foo/arc/0file.t: 0file.t
-    projectdir/geta: alpha.h
-    projectdir/proj/alpha.h: alpha.h
-    test/beta.c: beta.c
-    hello: .env.js
+    FirstFile.txt: FirstFileSrc.txt
+    SecondFile.py: SecondFileSrc.txt

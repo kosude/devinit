@@ -5,9 +5,13 @@
  *   See the LICENCE file for more information.
  */
 
+use core::fmt;
 use std::collections::HashMap;
 
-use super::{ContextArcMutex, FileTemplate, ProjectTemplate, Template};
+use super::{
+    BuiltinVariables, ContextArcMutex, FileTemplate, ProjectTemplate, Template,
+    BUILTIN_VARIABLES_IDENT,
+};
 use crate::error::{DevinitError, DevinitResult};
 use miette::IntoDiagnostic;
 use tera::Context;
@@ -18,13 +22,14 @@ pub enum RendererVariant<'a> {
 }
 
 /// A trait defining behaviour to render a template (i.e. either produce evaluated string output, or a project folder structure)
-pub trait Renderer<'a> {
+pub trait Renderer<'a>: fmt::Debug + Clone {
     type Template;
     type Output;
 
     fn new(template: &'a Self::Template) -> DevinitResult<RendererVariant>;
 
     fn add_variable<S: AsRef<str>>(&mut self, key: S, val: S);
+    fn set_builtin_variables(&mut self, defs: &BuiltinVariables);
 
     fn render(&self) -> DevinitResult<Self::Output>;
 
@@ -32,6 +37,7 @@ pub trait Renderer<'a> {
 }
 
 /// A renderer for file templates
+#[derive(Debug, Clone)]
 pub struct FileRenderer<'a> {
     ctx_ref: ContextArcMutex,
 
@@ -56,6 +62,10 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
         self.var_context.insert(key.as_ref(), val.as_ref());
     }
 
+    fn set_builtin_variables(&mut self, defs: &BuiltinVariables) {
+        self.var_context.insert(BUILTIN_VARIABLES_IDENT, &defs);
+    }
+
     /// Render the file, producing evaluated string output
     fn render(&self) -> DevinitResult<Self::Output> {
         self.ctx_ref
@@ -73,6 +83,7 @@ impl<'a> Renderer<'a> for FileRenderer<'a> {
 }
 
 /// A renderer for project templates
+#[derive(Debug, Clone)]
 pub struct ProjectRenderer<'a> {
     ctx_ref: ContextArcMutex,
 
@@ -94,6 +105,11 @@ impl<'a> Renderer<'a> for ProjectRenderer<'a> {
 
     fn add_variable<S: AsRef<str>>(&mut self, key: S, val: S) {
         self.var_context.insert(key.as_ref(), val.as_ref());
+    }
+
+    fn set_builtin_variables(&mut self, defs: &BuiltinVariables) {
+        self.var_context.remove(&BUILTIN_VARIABLES_IDENT); // remove previous builtins
+        self.var_context.insert(BUILTIN_VARIABLES_IDENT, &defs);
     }
 
     fn render(&self) -> DevinitResult<Self::Output> {

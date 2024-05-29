@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use super::ContextArcMutex;
+use super::{ContextArcMutex, BUILTIN_VARIABLES_IDENT};
 use crate::error::{DevinitError, DevinitResult};
 use tera::{
     ast::{ExprVal, Node},
@@ -68,6 +68,7 @@ fn get_variable_block_exprs<'a>(templates: &Vec<&'a Template>) -> DevinitResult<
 
     // NOTE: this code looks seriously inefficient (3 nested 'for' loops AND recursion), and
     //       definitely needs optimising at some point!!
+    //       (the indentation goes wayy too deep too bc of this)
     for tpl in templates {
         for node in tpl.ast.iter() {
             let children_flat = flatten_node_children(node);
@@ -75,7 +76,12 @@ fn get_variable_block_exprs<'a>(templates: &Vec<&'a Template>) -> DevinitResult<
                 match node {
                     Node::VariableBlock(_, expr) => {
                         if let ExprVal::Ident(id) = &expr.val {
-                            vars.push(id);
+                            // skip if the id is BUILTIN or a member of BUILTIN
+                            if id != BUILTIN_VARIABLES_IDENT
+                                && !id.starts_with(format!("{}.", BUILTIN_VARIABLES_IDENT).as_str())
+                            {
+                                vars.push(id);
+                            }
                         }
                     }
                     _ => {}

@@ -10,7 +10,7 @@ See the `examples/` directory for examples of writing file and project templates
 A tracker for planned features can be found on [Trello](https://trello.com/b/QkX7i1P1/devinit).
 
 > [!NOTE]
-> If you use VS Code, official Devinit integration is available via the extension on the 
+> If you use VS Code, official Devinit integration is available via the extension on the
 > [marketplace](https://marketplace.visualstudio.com/items?itemName=jack-bennett.devinit-vsc).
 
 
@@ -107,3 +107,17 @@ Break up the given string into lines of maximum length `len`, without breaking i
 ```
 
 ---
+
+
+### Built-in variables
+
+Devinit provides built-in variables that are evaluated behind-the-scenes at render time. They are all contained in the `BUILTIN` object, so they
+can be accessed with dot notation (`BUILTIN.foo`) or square bracket notation (`BUILTIN["foo"]`).
+
+
+| identifier       | Value                                                                                                              |
+|------------------|--------------------------------------------------------------------------------------------------------------------|
+| `file_name`*     | If `--path` is used - the name of the output file the template is being rendered to - otherwise, an empty string.  |
+| `file_contents`* | If `--path` is used, and it directs to an already-existing file, this contains the contents of that existing file. |
+
+\*Not available in project templates.
