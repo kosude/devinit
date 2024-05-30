@@ -1,0 +1,134 @@
+name: Release compiled binaries
+
+on:
+  push:
+    tags:
+      # Only release on tags which are semantic versions, otherwise stuff could break
+      - "v[0-9]+.[0-9]+.[0-9]+"
+
+permissions:
+  contents: write
+
+jobs:
+  # Initialise the release by creating it as a draft, named after the tag (which is a semantic version).
+  create-release:
+    name: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get release version from tag
+        run: |
+          echo "VERSION=$GITHUB_REF_NAME" >> $GITHUB_ENV
+          echo "Release version is: ${{ env.VERSION }}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create $VERSION --draft --verify-tag --title ${{ env.VERSION }}
+    outputs:
+      version: ${{ env.VERSION }}
+
+  # Using a matrix, build the devinit binary for each supported platform, and upload it to the newly drafted release.
+  build-release:
+    name: build-release
+    runs-on: ${{ matrix.os }}
+    needs:
+      - "create-release"
+
+    env:
+      CARGO: cargo          # cross is sometimes used instead of cargo
+      TARGET_FLAGS:         # set to use the correct target when using cross
+      TARGET_DIR: target    # when using cross, matrix.target is appended to this
+      CROSS_VERSION: v0.2.5 # pin cross version
+      RUST_BACKTRACE: 1     # rust backtraces
+
+    strategy:
+      fail-fast: false # if one job fails, don't immediately stop all of them
+
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+
+          - os: macos-latest
+            target: x86_64-apple-darwin
+
+          - os: windows-latest
+            target: x86_64-pc-windows-gnu
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Prepare Cross
+        if: ${{ matrix.os == 'ubuntu' && matrix.target != '' }}
+        shell: bash
+        run: |
+          # use pre-compiled binaries since cross takes ages to compile
+          DL_DIR="$RUNNER_TEMP/cross_dl"
+          mkdir -p "$DL_DIR"
+          echo "$DL_DIR" >> $GITHUB_PATH
+          cd "$DL_DIR"
+          curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
+          tar -xvzf cross-x86_64-unknown-linux-musl.tar.gz
+          echo "CARGO=cross" >> $GITHUB_ENV
+
+      - name: Set target variables
+        shell: bash
+        run: |
+          echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
+          echo "TARGET_DIR=target/${{ matrix.target }}" >> $GITHUB_ENV
+
+      - name: Diagnostic information
+        shell: bash
+        run: |
+          echo "Cargo is: ${{ env.CARGO }}"
+          echo "Target flag is: ${{ env.TARGET_FLAGS }}"
+          echo "Target directory is: ${{ env.TARGET_DIR }}"
+
+      - name: Build binary
+        shell: bash
+        run: |
+          ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            echo "ARTIFACT=target/${{ matrix.target }}/release/devinit.exe" >> $GITHUB_ENV
+          else
+            echo "ARTIFACT=target/${{ matrix.target }}/release/devinit" >> $GITHUB_ENV
+          fi
+
+      - name: Create archive
+        shell: bash
+        run: |
+          # determine name of archive (which includes the release version)
+          VERSION="${{ needs.create-release.outputs.version }}"
+          ARCHIVE_NAME="devinit-${VERSION/v}-${{ matrix.target }}"
+
+          mkdir -p "$ARCHIVE_NAME"
+
+          # populate the archive folder
+          mv "${{ env.ARTIFACT }}" "$ARCHIVE_NAME"
+          mv README.md LICENCE "$ARCHIVE_NAME"
+
+          # build the archive
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a "$ARCHIVE_NAME.zip" "$ARCHIVE_NAME"
+            echo "ASSET=$ARCHIVE_NAME.zip" >> $GITHUB_ENV
+          else
+            tar -czvf "$ARCHIVE_NAME.tar.gz" "$ARCHIVE_NAME"
+            echo "ASSET=$ARCHIVE_NAME.tar.gz" >> $GITHUB_ENV
+          fi
+
+      - name: Upload archive to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          gh release upload "$VERSION" ${{ env.ASSET }}

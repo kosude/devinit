@@ -26,7 +26,8 @@ for arg in "$@"; do
 done
 
 if [ ! -n "$OUT" ]; then
-    OUT="$(getverslong)"
+    # get long version by default
+    OUT="$($GIT describe --abbrev=4 --always --tags --dirty 2>/dev/null)"
 fi
 
 if [ -n "$NO_COMMITN" ] && [ -n "$SHORT" ]; then
