@@ -20,6 +20,9 @@ jobs:
       - name: Get release version from tag
         run: |
           echo "VERSION=$GITHUB_REF_NAME" >> $GITHUB_ENV
+
+      - name: Display release version
+        run: |
           echo "Release version is: ${{ env.VERSION }}"
 
       - name: Create GitHub release
@@ -38,11 +41,7 @@ jobs:
       - "create-release"
 
     env:
-      CARGO: cargo          # cross is sometimes used instead of cargo
-      TARGET_FLAGS:         # set to use the correct target when using cross
-      TARGET_DIR: target    # when using cross, matrix.target is appended to this
-      CROSS_VERSION: v0.2.5 # pin cross version
-      RUST_BACKTRACE: 1     # rust backtraces
+      RUST_BACKTRACE: 1 # enable rust backtraces
 
     strategy:
       fail-fast: false # if one job fails, don't immediately stop all of them
@@ -67,36 +66,11 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.target }}
 
-      - name: Prepare Cross
-        if: ${{ matrix.os == 'ubuntu' && matrix.target != '' }}
-        shell: bash
-        run: |
-          # use pre-compiled binaries since cross takes ages to compile
-          DL_DIR="$RUNNER_TEMP/cross_dl"
-          mkdir -p "$DL_DIR"
-          echo "$DL_DIR" >> $GITHUB_PATH
-          cd "$DL_DIR"
-          curl -LO "https://github.com/cross-rs/cross/releases/download/$CROSS_VERSION/cross-x86_64-unknown-linux-musl.tar.gz"
-          tar -xvzf cross-x86_64-unknown-linux-musl.tar.gz
-          echo "CARGO=cross" >> $GITHUB_ENV
-
-      - name: Set target variables
-        shell: bash
-        run: |
-          echo "TARGET_FLAGS=--target ${{ matrix.target }}" >> $GITHUB_ENV
-          echo "TARGET_DIR=target/${{ matrix.target }}" >> $GITHUB_ENV
-
-      - name: Diagnostic information
-        shell: bash
-        run: |
-          echo "Cargo is: ${{ env.CARGO }}"
-          echo "Target flag is: ${{ env.TARGET_FLAGS }}"
-          echo "Target directory is: ${{ env.TARGET_DIR }}"
-
       - name: Build binary
         shell: bash
         run: |
-          ${{ env.CARGO }} build --verbose --release ${{ env.TARGET_FLAGS }}
+          cargo build --verbose --release --target ${{ matrix.target }}
+
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             echo "ARTIFACT=target/${{ matrix.target }}/release/devinit.exe" >> $GITHUB_ENV
           else
