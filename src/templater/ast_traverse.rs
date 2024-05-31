@@ -32,7 +32,11 @@ pub fn get_missing_template_vars<S: AsRef<str>>(
     Ok(var_ref_exprs
         .iter()
         .filter_map(|k| {
-            if set_exprs.contains(k) {
+            // get the base variable name -- if it is an object, ignore accessors
+            let base = &k[..k.find('.').unwrap_or_else(|| k.len())];
+            let base = &base[..base.find('[').unwrap_or_else(|| base.len())];
+
+            if set_exprs.contains(&&base.to_string()) {
                 None
             } else {
                 Some(k.to_string())

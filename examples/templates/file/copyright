@@ -1,9 +1,19 @@
-{{ start }}
-{{ prefix }}Copyright (c) {{ year }} {{ copyright_holders }}.
-{{ prefix }}All Rights Reserved.
+{%- set lang = lang_by_filename(filename=BUILTIN.file_name) -%}
+{%- if lang != "unknown" -%}
+{%- set com = comment_by_lang(lang_id=lang) -%}
+{{ com.0 }}
+{{ com.1 }}   Copyright (c) {{ year }} {{ copyright_holders }}.
+{{ com.1 }}   All Rights Reserved.
+{{ com.1 }}
+{{ com.1 }}   See the LICENCE file for more information.
+{{ com.2 }}
+{%- else -%}
+Copyright (c) {{ year }} {{ copyright_holders }}.
+All Rights Reserved.
 
-{%- if licence_file %}
-{{ prefix }}
-{{ prefix }}See the {{ licence_file }} file for more information.
+See the LICENCE file for more information.
+
+===================
 {%- endif %}
-{{ end -}}
+
+{{ BUILTIN.file_contents -}}

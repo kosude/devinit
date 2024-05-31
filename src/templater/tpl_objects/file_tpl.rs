@@ -5,7 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
-use std::{fs, path::Path};
+use std::{ffi::OsStr, fs, path::Path};
 
 use miette::IntoDiagnostic;
 
@@ -48,16 +48,12 @@ impl<'a> Template<'a> for FileTemplate {
 
     /// Load the file template from a single template configuration script
     fn load<P: AsRef<Path>>(path: P, ctx: ContextArcMutex) -> DevinitResult<Self::Me> {
-        let name = String::from(
-            path.as_ref()
-                .file_name()
-                .ok_or(DevinitError::FileReadWriteError(format!(
-                    "Failed to extract filename from path {:?}",
-                    path.as_ref()
-                )))?
-                .to_str()
-                .unwrap(),
-        );
+        let name = String::from(path.as_ref().file_name().and_then(OsStr::to_str).ok_or(
+            DevinitError::FileReadWriteError(format!(
+                "Failed to extract filename from path {:?}",
+                path.as_ref()
+            )),
+        )?);
         let literal = fs::read_to_string(&path)
             .map_err(|e| DevinitError::FileReadWriteError(e.to_string()))?;
 

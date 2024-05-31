@@ -98,6 +98,40 @@ cases, use the guaranteed `text` field instead.*
 
 ---
 
+#### FUNCTION `lang_by_filename(filename: String)`
+
+Assume a programming language ID from the specified filename. If `filename` contains an extension, that is checked - otherwise `filename` itself is
+checked.
+
+For a comprehensive list of possible language IDs, see the [`language_specifics.rs`](src/templater/language_specifics.rs) source file.
+
+One example use case could be with the `file_name` [builtin](#built-in-variables) - this would give you the assumed file format of the output file,
+when using the `--path` option.
+
+If the filename does not conform to any expected languages, "unknown" will be returned instead.
+
+---
+
+#### FUNCTION `comment_by_lang(lang_id: String)`
+
+Return an object containing comment syntax, depending on `lang_id`, which is any one of the language IDs returned by the
+[lang_by_filename](#function-lang_by_filenamefilename-string) function. If `lang_id` isn't associated with any comment styles, then "unknown" is
+returned instead.
+
+The output object prefers comment blocks, and is in the order [ start, prefix, end ], where `start` and `end` should be on their own lines and
+`prefix` should be before each line of commented text.
+
+For example, if the output is equal to ["#", "##", "###"], it is representing comment block syntax that looks like this:
+```py
+#
+## comment block
+###
+```
+
+See the [copyright](examples/templates/file/copyright) example for a practical use case.
+
+---
+
 #### FILTER `wrap(len: i32)`
 
 Break up the given string into lines of maximum length `len`, without breaking individual words.

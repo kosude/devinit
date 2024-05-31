@@ -313,8 +313,7 @@ fn get_filename_filecontents_pair<P: AsRef<Path>>(path: P) -> DevinitResult<(Str
     Ok((
         path.as_ref()
             .file_name()
-            .unwrap_or(OsStr::new(""))
-            .to_str()
+            .and_then(OsStr::to_str)
             .ok_or(DevinitError::FileReadWriteError(
                 "File path is not valid UTF-8".to_string(),
             ))?

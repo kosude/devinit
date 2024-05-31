@@ -21,7 +21,11 @@ pub struct Context {
 impl Context {
     pub fn new() -> Self {
         let mut tera = Tera::default();
+
         tera.register_function("licence", fn_decls::licence());
+        tera.register_function("lang_by_filename", fn_decls::lang_by_filename());
+        tera.register_function("comment_by_lang", fn_decls::comment_by_lang());
+
         tera.register_filter("wrap", fn_decls::wrap());
 
         Self { tera }

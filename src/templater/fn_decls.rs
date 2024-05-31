@@ -7,7 +7,9 @@
 
 use license::License;
 use std::collections::HashMap;
-use tera::{from_value, Filter, Function, Map, Result, Value};
+use tera::{from_value, to_value, Filter, Function, Map, Result, Value};
+
+use super::language_specifics;
 
 function! {
     /// Expand the specified licence by its SPDX code to it full form.
@@ -26,6 +28,18 @@ function! {
         }
 
         map
+    }
+}
+
+function! {
+    pub fn lang_by_filename(filename: String,) {
+        language_specifics::lang_id_from_filename(&filename).unwrap_or("unknown")
+    }
+}
+
+function! {
+    pub fn comment_by_lang(lang_id: String,) {
+        to_value(language_specifics::comment_style_from_lang(&lang_id)).unwrap_or("unknown".into())
     }
 }
 
