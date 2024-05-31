@@ -14,6 +14,7 @@ macro_rules! function {
     ) => {
         $(#[$($attrss)*])*
         pub fn $fname() -> impl Function {
+            #[allow(unused_variables)]
             Box::new(|argv: &HashMap<String, Value>| -> Result<Value> {
                 $(
                     let $arg = get_arg_helper!(argv, $arg: $typ);

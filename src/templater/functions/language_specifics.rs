@@ -100,18 +100,15 @@ pub fn lang_id_from_filename<S: AsRef<str>>(filename: S) -> Option<&'static str>
 /// Get the associated language ID from the specified file extension.
 fn from_ext<S: AsRef<str>>(ext: S) -> Option<&'static str> {
     let ext = ext.as_ref().to_lowercase();
-    EXT_BY_LANG_ID
-        .binary_search_by_key(&ext.as_str(), |&(ext, _)| ext)
-        .ok()
-        .map(|i| EXT_BY_LANG_ID[i].1)
+    EXT_BY_LANG_ID.iter().find(|x| x.0 == ext).map(|x| x.1)
 }
 
 /// Get the associated language ID from the specified filename, if it is a standard recognised filename.
 fn from_standard_filename<S: AsRef<str>>(filename: S) -> Option<&'static str> {
     FILENAME_BY_LANG_ID
-        .binary_search_by_key(&filename.as_ref(), |&(fname, _)| fname)
-        .ok()
-        .map(|i| FILENAME_BY_LANG_ID[i].1)
+        .iter()
+        .find(|x| x.0 == filename.as_ref())
+        .map(|x| x.1)
 }
 
 /// A struct containing comment style information.

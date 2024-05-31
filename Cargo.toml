@@ -5,6 +5,7 @@ description = "Quickly initialise files and folders with preconfigured boilerpla
 edition = "2018"
 
 [dependencies]
+chrono = "0.4.38"
 clap = { version = "4.4.18", features = ["derive"] }
 colored = "2.1.0"
 dirs = "5.0.1"

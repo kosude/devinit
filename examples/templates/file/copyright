@@ -2,13 +2,13 @@
 {%- if lang != "unknown" -%}
 {%- set com = comment_by_lang(lang_id=lang) -%}
 {{ com.0 }}
-{{ com.1 }}   Copyright (c) {{ year }} {{ copyright_holders }}.
+{{ com.1 }}   Copyright (c) {{ year() }} {{ copyright_holders }}.
 {{ com.1 }}   All Rights Reserved.
 {{ com.1 }}
 {{ com.1 }}   See the LICENCE file for more information.
 {{ com.2 }}
 {%- else -%}
-Copyright (c) {{ year }} {{ copyright_holders }}.
+Copyright (c) {{ year() }} {{ copyright_holders }}.
 All Rights Reserved.
 
 See the LICENCE file for more information.
