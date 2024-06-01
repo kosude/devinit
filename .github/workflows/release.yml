@@ -73,6 +73,7 @@ jobs:
       - name: Build binary
         shell: bash
         run: |
+          DEVINITVERS="${{ needs.create-release.outputs.version }}" \
           cargo build --verbose --release --target ${{ matrix.target }}
 
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
