@@ -54,8 +54,7 @@ export async function renderFileTemplate(runnerState: RunnerState, skipDefaults?
             runnerState,
             templateName.label,
             activePath,
-            skipDefaults ?? false,
-            false
+            skipDefaults ?? false
         );
     } catch (e) {
         if (e !== "Input cancelled") {

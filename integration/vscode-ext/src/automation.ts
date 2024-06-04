@@ -5,6 +5,7 @@
  *   See the LICENCE file for more information.
  */
 
+import * as fs from "node:fs/promises";
 import * as vscode from "vscode";
 import * as userConfig  from "./userConfig";
 import { renderFileTemplatePrompted } from "./templateRender";
@@ -62,12 +63,20 @@ export class Automator {
      */
     private async onFileCreated(uri: vscode.Uri, templateName: string) {
         try {
+            try {
+                const cur = (await fs.readFile(uri.fsPath)).toString();
+                if (cur.trim().length > 0) {
+                    return;
+                }
+            } catch {
+                console.error(`When checking for existing file contents: error reading from ${uri.fsPath}`)
+            }
+
             await renderFileTemplatePrompted(
                 this.runnerState,
                 templateName,
                 uri.fsPath,
-                false,
-                true
+                false
             );
         } catch (e) {
             if (e !== "Input cancelled") {
