@@ -90,17 +90,15 @@ $(VSCODE_EXT_PREFIX)/node_modules:
 vscode_ext: | validate_npm $(VSCODE_EXT_PREFIX)/node_modules
 	$(NPM) run $(VSCODE_EXT_NPM_SCRIPT) --prefix=$(VSCODE_EXT_PREFIX)
 
-ifneq "$(DEBUG)" "1"
 	cp $(SRC_DIR)/LICENCE $(VSCODE_EXT_PREFIX)/LICENSE
 	cp $(SRC_DIR)/resources/icon.png $(VSCODE_EXT_DIST_DIR)/icon.png
 
 	cd $(VSCODE_EXT_PREFIX) && \
 	$(VSCE) $(VSCE_SUBCOMMAND) $(VSCE_FLAGS) $(subst v,,$(PROJECT_VERS_NO_COMMITN))
-endif
 
 
 #
-# Remove build directory
+# Remove build artifacts
 #
 
 clean:

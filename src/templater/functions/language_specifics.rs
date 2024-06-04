@@ -125,7 +125,7 @@ macro_rules! style {
 }
 
 /// An array of language id-comment style pairs.
-const COMMENTS_BY_LANG_ID: [(&str, CommentStyle); 42] = [
+const COMMENTS_BY_LANG_ID: [(&str, CommentStyle); 43] = [
     style!("batch", ("", "REM", "")),
     style!("c", ("/*", " *", " */")),
     style!("clojure", ("", ";;", "")),
@@ -150,6 +150,7 @@ const COMMENTS_BY_LANG_ID: [(&str, CommentStyle); 42] = [
     style!("kotlin", ("/*", " *", " */")),
     style!("less", ("/*", " *", " */")),
     style!("lua", ("", "--", "")),
+    style!("makefile", ("", "#", "")),
     style!("markdown", ("", "", "")), // markdown doesn't really have comments
     style!("perl", ("", "#", "")),
     style!("python", ("", "#", "")),

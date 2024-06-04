@@ -1,12 +1,20 @@
 {%- set lang = lang_by_filename(filename=BUILTIN.file_name) -%}
 {%- if lang != "unknown" -%}
 {%- set com = comment_by_lang(lang_id=lang) -%}
+{%- if com.0 | length <= 0 -%}
+{{ com.1 }}
+{%- else -%}
 {{ com.0 }}
+{%- endif %}
 {{ com.1 }}   Copyright (c) {{ year() }} {{ copyright_holders }}.
 {{ com.1 }}   All Rights Reserved.
 {{ com.1 }}
 {{ com.1 }}   See the LICENCE file for more information.
+{% if com.2 | length <= 0 -%}
+{{ com.1 }}
+{%- else -%}
 {{ com.2 }}
+{%- endif %}
 {%- else -%}
 Copyright (c) {{ year() }} {{ copyright_holders }}.
 All Rights Reserved.
