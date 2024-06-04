@@ -15,11 +15,15 @@ pub static BUILTIN_VARIABLES_IDENT: &'static str = "BUILTIN";
 /// equal to `BUILTIN_VARIABLES_IDENT`.
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct BuiltinVariables {
-    /// Output filename, if rendering a file into an already-existing path
-    /// Empty if using --dry-run
+    /// Output filename, if rendering a file into a fs path.
+    /// Empty if using --dry-run.
     pub file_name: String,
 
     /// Previous file contents, if rendering a file into an already-existing path.
-    /// Empty if using --dry-run
+    /// Empty if using --dry-run.
     pub file_contents: String,
+
+    /// Name of the parent directory to the output file, if rendering a file into a fs path.
+    /// Empty if using --dry-run.
+    pub parent_name: String,
 }

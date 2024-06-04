@@ -10,7 +10,7 @@ use std::{ffi::OsStr, path::Path};
 use serde::Serialize;
 
 /// An array of language extension-id pairs.
-const EXT_BY_LANG_ID: [(&str, &str); 68] = [
+const EXT_BY_LANG_ID: [(&str, &str); 69] = [
     ("bat", "batch"),
     ("c", "c"),
     ("h", "c"),
@@ -21,6 +21,7 @@ const EXT_BY_LANG_ID: [(&str, &str); 68] = [
     ("cpp", "cpp"),
     ("cxx", "cpp"),
     ("c++", "cpp"),
+    ("hh", "cpp"),
     ("hpp", "cpp"),
     ("hxx", "cpp"),
     ("h++", "cpp"),

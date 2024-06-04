@@ -153,5 +153,6 @@ can be accessed with dot notation (`BUILTIN.foo`) or square bracket notation (`B
 |------------------|--------------------------------------------------------------------------------------------------------------------|
 | `file_name`*     | If `--path` is used - the name of the output file the template is being rendered to - otherwise, an empty string.  |
 | `file_contents`* | If `--path` is used, and it directs to an already-existing file, this contains the contents of that existing file. |
+| `parent_name`*   | If `--path` is used - the name of the first parent directory of the output file - otherwise, an empty string.      |
 
 \*Not available in project templates.

@@ -158,8 +158,11 @@ fn render<S: AsRef<str>>(
         RendererVariant::File(ref mut f) => {
             // set up built-in variables if using --path=<p>
             if let Some(p) = &output.path {
-                (builtins.file_name, builtins.file_contents) =
-                    get_filename_filecontents_pair(Path::new(p))?;
+                (
+                    builtins.file_name,
+                    builtins.parent_name,
+                    builtins.file_contents,
+                ) = get_file_builtin_info(Path::new(p))?;
             }
             f.set_builtin_variables(&builtins);
 
@@ -354,10 +357,11 @@ fn list_variables(variables: &Vec<String>, parsable: bool) {
     }
 }
 
-/// Return the filename and file contents (if the path exists - otherwise empty str) of the given path.
+/// Return the filename, file contents (if the path exists - otherwise empty str), etc of the given path.
 /// This is intended to be used to retrieve file-related contents for the BUILTIN variables.
-fn get_filename_filecontents_pair<P: AsRef<Path>>(path: P) -> DevinitResult<(String, String)> {
+fn get_file_builtin_info<P: AsRef<Path>>(path: P) -> DevinitResult<(String, String, String)> {
     Ok((
+        // path file name
         path.as_ref()
             .file_name()
             .and_then(OsStr::to_str)
@@ -365,6 +369,17 @@ fn get_filename_filecontents_pair<P: AsRef<Path>>(path: P) -> DevinitResult<(Str
                 "File path is not valid UTF-8".to_string(),
             ))?
             .to_owned(),
+        // path parent directory name
+        path.as_ref()
+            .parent()
+            .unwrap_or(PathBuf::from("").as_path())
+            .file_name()
+            .and_then(OsStr::to_str)
+            .ok_or(DevinitError::FileReadWriteError(
+                "File path is not valid UTF-8".to_string(),
+            ))?
+            .to_string(),
+        // file contents
         match fs::read_to_string(&path) {
             Ok(c) => c,
             Err(e) => {
