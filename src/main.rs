@@ -78,15 +78,15 @@ fn main() {
             .into_iter()
             .collect::<HashMap<_, _>>();
 
-        // get all variables referenced in the to-be-rendered template and filter out the ones specified on the cli
-        // this results in a list of completely undefined variable identifiers
-        let undefined_vars = find_referenced_vars(&renderer)?
-            .into_iter()
-            .filter(|v| !cli_var_defs.contains_key(v))
-            .collect::<Vec<_>>();
-
         // if the --list-vars option is provided, list them and return early
         if output_conf.list_vars {
+            // get all variables referenced in the to-be-rendered template and filter out the ones specified on the cli
+            // this results in a list of completely undefined variable identifiers
+            let undefined_vars = find_referenced_vars(&renderer)?
+                .into_iter()
+                .filter(|v| !cli_var_defs.contains_key(v))
+                .collect::<Vec<_>>();
+
             // only list variables that are still undefined
             list_variables(&undefined_vars, args.parsable);
             return Ok(());
