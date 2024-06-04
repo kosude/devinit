@@ -75,6 +75,10 @@ export class Runner {
             args.push(`-D"${key}"="${val}"`)
         })
 
+        if (this.assertEmpty) {
+            args.push("--assert-empty")
+        }
+
         args.push(`"${this.templateName ?? ""}"`);
 
         return args;
@@ -150,6 +154,15 @@ export class Runner {
     private templateName: string | undefined;
     public setTemplateName(name: string): Runner {
         this.templateName = name;
+        return this;
+    }
+
+    /**
+     * Whether or not to only template a file if it is empty, or if it doesn't exist.
+     */
+    private assertEmpty: boolean = false;
+    public setAssertEmpty(val: boolean): Runner {
+        this.assertEmpty = val;
         return this;
     }
 }

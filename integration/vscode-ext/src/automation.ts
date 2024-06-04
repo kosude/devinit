@@ -66,7 +66,8 @@ export class Automator {
                 this.runnerState,
                 templateName,
                 uri.fsPath,
-                false
+                false,
+                true
             );
         } catch (e) {
             if (e !== "Input cancelled") {

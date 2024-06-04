@@ -19,7 +19,8 @@ export async function renderFileTemplatePrompted(
     runnerState: RunnerState,
     templateName: string,
     outputPath: string,
-    skipDefaults: boolean
+    skipDefaults: boolean,
+    assertEmpty: boolean
 ): Promise<{stdout: string, stderr: string}> {
     // get user-set default variables for this template
     const defaultVariablesUntyped = userConfig.getDefaultVariableMaps().get(templateName);
@@ -53,7 +54,9 @@ export async function renderFileTemplatePrompted(
         runnerState,
         templateName,
         outputPath,
-        new Map([...definedVariables, ...defaultVariablesMap]));
+        new Map([...definedVariables, ...defaultVariablesMap]),
+        assertEmpty
+    );
 }
 
 /**
@@ -64,7 +67,8 @@ async function renderFileTemplate(
     runnerState: RunnerState,
     templateName: string,
     outputPath: string,
-    variables: Map<string, string>
+    variables: Map<string, string>,
+    assertEmpty: boolean
 ): Promise<{stdout: string, stderr: string}> {
     return runnerState
         .buildRunner()
@@ -73,6 +77,7 @@ async function renderFileTemplate(
         .setOutputPath(outputPath)
         .setTemplateName(templateName)
         .setVariableMap(variables)
+        .setAssertEmpty(assertEmpty)
         .run();
 }
 

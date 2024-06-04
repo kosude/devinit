@@ -51,6 +51,10 @@ pub struct FileArgs {
     #[command(flatten)]
     pub output: OutputArgGroup,
 
+    /// If using --path, abort if the file already exists and is not empty
+    #[arg(long)]
+    pub assert_empty: bool,
+
     #[command(flatten)]
     pub com: CommonArgGroup,
 }

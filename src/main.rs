@@ -14,7 +14,7 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     fs,
-    io::ErrorKind,
+    io::{ErrorKind, Read, Write},
     path::{Path, PathBuf},
     process::exit,
 };
@@ -51,18 +51,20 @@ fn main() {
         }
 
         // build rendering context from command-line arguments
-        let (mut renderer, output_conf) = match args.subcommand {
+        let (mut renderer, output_conf, assert_empty) = match args.subcommand {
             CommandVariant::File(ref args) => (
                 template_set
                     .get_file_template(&args.com.template)?
                     .make_renderer()?,
                 &args.output,
+                args.assert_empty,
             ),
             CommandVariant::Project(ref args) => (
                 template_set
                     .get_project_template(&args.com.template)?
                     .make_renderer()?,
                 &args.output,
+                false,
             ),
             _ => panic!("Invalid subcommand found, unexpected behaviour"),
         };
@@ -90,7 +92,7 @@ fn main() {
             return Ok(());
         }
 
-        render(&mut renderer, &cli_var_defs, &output_conf)?;
+        render(&mut renderer, &cli_var_defs, &output_conf, assert_empty)?;
 
         Ok(())
     }() {
@@ -147,6 +149,7 @@ fn render<S: AsRef<str>>(
     renderer: &mut RendererVariant,
     var_map: &HashMap<S, S>,
     output: &OutputArgGroup,
+    assert_empty: bool,
 ) -> DevinitResult<()> {
     let mut builtins = BuiltinVariables::default();
 
@@ -171,9 +174,53 @@ fn render<S: AsRef<str>>(
             if output.dry_run {
                 dry_run::print_file_render(name, &f);
             } else {
-                fs::write(output.path.as_ref().unwrap(), &f).map_err(|e| {
-                    DevinitError::FileReadWriteError(format!("Failed to write file: {e}"))
-                })?;
+                let path = output.path.as_ref().unwrap();
+                match fs::File::options().write(true).read(true).open(&path) {
+                    Ok(mut file) => {
+                        // the file exists so check for --assert-empty; if it is not empty then return early
+                        if assert_empty {
+                            let mut read = String::new();
+                            file.read_to_string(&mut read).map_err(|e| {
+                                DevinitError::FileReadWriteError(format!(
+                                    "Failed to read file {}: {e}",
+                                    &path
+                                ))
+                            })?;
+
+                            if read.trim().len() > 0 {
+                                println!(
+                                    "File at {} contains content, aborting (--assert-empty)",
+                                    &path
+                                );
+                                return Ok(());
+                            }
+                        }
+
+                        file.write(f.as_bytes()).map_err(|e| {
+                            DevinitError::FileReadWriteError(format!(
+                                "Failed to write file to {}: {e}",
+                                &path
+                            ))
+                        })?;
+                    }
+                    Err(err) => {
+                        if err.kind() == ErrorKind::NotFound {
+                            // if the file doesn't already exist then create it and write the render output into it
+                            fs::write(&path, &f).map_err(|e| {
+                                DevinitError::FileReadWriteError(format!(
+                                    "Failed to write file to {}: {e}",
+                                    &path
+                                ))
+                            })?;
+                        } else {
+                            // otherwise there was another error
+                            return Err(DevinitError::FileReadWriteError(format!(
+                                "Failed to open/create file at {}: {err}",
+                                &path
+                            )));
+                        }
+                    }
+                }
             }
         }
         // a project template was specified (devinit project)...
