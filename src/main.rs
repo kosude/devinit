@@ -10,8 +10,10 @@ use cli::{Cli, CommandVariant, OutputArgGroup};
 use colored::Colorize;
 use error::{DevinitError, DevinitResult};
 use files::{ConfigYaml, ConfigYamlBuilder};
+use path_clean::PathClean;
 use std::{
     collections::HashMap,
+    env,
     ffi::OsStr,
     fs,
     io::{ErrorKind, Read, Write},
@@ -91,6 +93,33 @@ fn main() {
             list_variables(&undefined_vars, args.parsable);
             return Ok(());
         }
+
+        // make output path absolute if it was specified
+        let output_path_absolute = if let Some(path) = &output_conf.path {
+            let path = PathBuf::from(&path);
+            Some(
+                if path.is_absolute() {
+                    path
+                } else {
+                    env::current_dir()
+                        .map_err(|_| {
+                            DevinitError::FileReadWriteError("Cwd not accessible".to_string())
+                        })?
+                        .join(path)
+                }
+                .clean()
+                .display()
+                .to_string(),
+            )
+        } else {
+            None
+        };
+
+        let output_conf = OutputArgGroup {
+            path: output_path_absolute, // use absolute path
+            dry_run: output_conf.dry_run,
+            list_vars: output_conf.list_vars,
+        };
 
         render(&mut renderer, &cli_var_defs, &output_conf, assert_empty)?;
 
@@ -365,9 +394,10 @@ fn get_file_builtin_info<P: AsRef<Path>>(path: P) -> DevinitResult<(String, Stri
         path.as_ref()
             .file_name()
             .and_then(OsStr::to_str)
-            .ok_or(DevinitError::FileReadWriteError(
-                "File path is not valid UTF-8".to_string(),
-            ))?
+            .ok_or(DevinitError::FileReadWriteError(format!(
+                "Output file path {:?} is not valid UTF-8",
+                path.as_ref()
+            )))?
             .to_owned(),
         // path parent directory name
         path.as_ref()
@@ -375,9 +405,10 @@ fn get_file_builtin_info<P: AsRef<Path>>(path: P) -> DevinitResult<(String, Stri
             .unwrap_or(PathBuf::from("").as_path())
             .file_name()
             .and_then(OsStr::to_str)
-            .ok_or(DevinitError::FileReadWriteError(
-                "File path is not valid UTF-8".to_string(),
-            ))?
+            .ok_or(DevinitError::FileReadWriteError(format!(
+                "Path of parent directory of output file {:?} is not valid UTF-8",
+                path.as_ref()
+            )))?
             .to_string(),
         // file contents
         match fs::read_to_string(&path) {

@@ -103,7 +103,7 @@ cases, use the guaranteed `text` field instead.*
 Assume a programming language ID from the specified filename. If `filename` contains an extension, that is checked - otherwise `filename` itself is
 checked.
 
-For a comprehensive list of possible language IDs, see the [`language_specifics.rs`](src/templater/language_specifics.rs) source file.
+For a comprehensive list of possible language IDs, see the [`language_specifics.rs`](src/templater/functions/language_specifics.rs) source file.
 
 One example use case could be with the `file_name` [builtin](#built-in-variables) - this would give you the assumed file format of the output file,
 when using the `--path` option.
