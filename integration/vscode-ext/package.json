@@ -82,7 +82,9 @@
     "devDependencies": {
         "@types/node": "^20.12.12",
         "@types/vscode": "^1.88.0",
+        "@types/which": "^3.0.4",
         "esbuild": "^0.21.4",
-        "typescript": "^5.4.5"
+        "typescript": "^5.4.5",
+        "which": "^4.0.0"
     }
 }

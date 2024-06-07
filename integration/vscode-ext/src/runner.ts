@@ -7,6 +7,7 @@
 
 import * as child_process from "node:child_process";
 import * as util from "node:util";
+import which from "which";
 
 /**
  * Variants of devinit subcommands
@@ -35,9 +36,23 @@ export class Runner {
      * `then` is run after a succesful execution completes, otherwise `err` is run instead.
      * @returns The executed command as a verbatim string, for diagnostics
      */
-    public run(): Promise<{ stdout: string, stderr: string }> {
+    public async run(): Promise<{ stdout: string, stderr: string }> {
+        const path = (this.execPath !== "")
+            ? this.execPath
+            : await this.findDevinitPath();
+        if (!path) {
+            return Promise.reject(
+                "Couldn't find devinit installed on your machine. If you haven't already, download its latest release " +
+                "from GitHub: https://github.com/kosude/devinit/releases"
+            );
+        }
+
+        const cmd = `"${path}" ${this.buildArgs().join(" ")}`;
+
+        console.log(cmd);
+
         const exec = util.promisify(child_process.exec);
-        return exec(`"${this.execPath}" ${this.buildArgs().join(" ")}`);
+        return exec(cmd);
     }
 
     /**
@@ -78,6 +93,19 @@ export class Runner {
         args.push(`"${this.templateName ?? ""}"`);
 
         return args;
+    }
+
+    /**
+     * Look for the devinit installation on the system; undefined is returned if none could be found.
+     */
+    private async findDevinitPath(): Promise<string | undefined> {
+        // search PATH for devinit
+        const fromPath = await which("devinit", { nothrow: true });
+        if (fromPath) {
+            return fromPath;
+        }
+
+        return undefined;
     }
 
     /**

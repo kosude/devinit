@@ -34,8 +34,7 @@ export class RunnerState {
      * This should be done when config changes (via listening to `vscode.workspace.onDidChangeConfiguration()`)
      */
     public updateUserConfigProperties() {
-        let execPath = userConfig.getExecutablePath();
-        this.execPath = (execPath.length > 0) ? execPath : "devinit";
+        this.execPath = userConfig.getExecutablePath();
 
         let configPath = userConfig.getConfigPath();
         this.configPath = (configPath.length > 0) ? configPath : undefined;
