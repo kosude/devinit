@@ -9,3 +9,5 @@ node_modules/
 
 # LICENSE is generated on make because vsce requires a LICENSE file (misspelt), and is just a copy of LICENCE.
 integration/vscode-ext/LICENSE
+
+.DS_Store
